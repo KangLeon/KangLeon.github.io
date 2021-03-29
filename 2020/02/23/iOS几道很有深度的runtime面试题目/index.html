@@ -5,7 +5,7 @@
   
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
-  <link rel="dns-prefetch" href="http://example.com">
+  <link rel="dns-prefetch" href="http://www.jiyoung.cn">
   <title>iOS几道runtime面试题目 | JY</title>
   <meta name="generator" content="hexo-theme-yilia-plus">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -13,17 +13,17 @@
   <meta name="description" content="1.在OC中初始化对象时，[[class_name alloc] init]和[class_name new]这两种方式有什么区别？源码： alloc的实现与new实现的对比： +(id)alloc&amp;#123;     return _objc_rootAlloc(self); &amp;#125; id_objc_rootAlloc(Class cls)&amp;#123;     return  callAl">
 <meta property="og:type" content="article">
 <meta property="og:title" content="iOS几道runtime面试题目">
-<meta property="og:url" content="http://example.com/2020/02/23/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/index.html">
+<meta property="og:url" content="http://www.jiyoung.cn/2020/02/23/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/index.html">
 <meta property="og:site_name" content="JY">
 <meta property="og:description" content="1.在OC中初始化对象时，[[class_name alloc] init]和[class_name new]这两种方式有什么区别？源码： alloc的实现与new实现的对比： +(id)alloc&amp;#123;     return _objc_rootAlloc(self); &amp;#125; id_objc_rootAlloc(Class cls)&amp;#123;     return  callAl">
 <meta property="og:locale">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/objc_msgSend.png">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/methodForSelector.png">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/method_getImplementation.png">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/_objc_msgForward.png">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/%E5%B1%9E%E6%80%A7%E5%85%B3%E8%81%94.png">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/SideTables.png">
-<meta property="og:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/%E6%96%B9%E6%B3%95%E6%9F%A5%E6%89%BE%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/objc_msgSend.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/methodForSelector.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/method_getImplementation.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/_objc_msgForward.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/%E5%B1%9E%E6%80%A7%E5%85%B3%E8%81%94.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/SideTables.png">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/%E6%96%B9%E6%B3%95%E6%9F%A5%E6%89%BE%E6%B5%81%E7%A8%8B.png">
 <meta property="article:published_time" content="2020-02-23T01:06:28.000Z">
 <meta property="article:modified_time" content="2020-02-23T06:54:43.000Z">
 <meta property="article:author" content="KangLeon">
@@ -31,7 +31,7 @@
 <meta property="article:tag" content="Job Interview">
 <meta property="article:tag" content="Written examination">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/objc_msgSend.png">
+<meta name="twitter:image" content="http://www.jiyoung.cn/uploads/images/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/objc_msgSend.png">
   
     <link rel="alternative" href="/atom.xml" title="JY" type="application/atom+xml">
   
@@ -478,7 +478,7 @@ id _obj_rootInit(id obj)&#123;
         </li>
         <li>
           <strong>本文链接：</strong>
-          <a href="http://example.com/2020/02/23/iOS几道很有深度的runtime面试题目/" title="iOS几道runtime面试题目" target="_blank">http://example.com/2020/02/23/iOS几道很有深度的runtime面试题目/</a>
+          <a href="http://www.jiyoung.cn/2020/02/23/iOS几道很有深度的runtime面试题目/" title="iOS几道runtime面试题目" target="_blank">http://www.jiyoung.cn/2020/02/23/iOS几道很有深度的runtime面试题目/</a>
         </li>
         
         <li>
@@ -579,7 +579,7 @@ id _obj_rootInit(id obj)&#123;
     <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-     <!-- <img src="//pan.baidu.com/share/qrcode?url=http://example.com/2020/02/23/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/" alt="微信分享二维码"> -->
+     <!-- <img src="//pan.baidu.com/share/qrcode?url=http://www.jiyoung.cn/2020/02/23/iOS%E5%87%A0%E9%81%93%E5%BE%88%E6%9C%89%E6%B7%B1%E5%BA%A6%E7%9A%84runtime%E9%9D%A2%E8%AF%95%E9%A2%98%E7%9B%AE/" alt="微信分享二维码"> -->
     </div>
 </div>
 
@@ -661,7 +661,7 @@ id _obj_rootInit(id obj)&#123;
   <div class="outer">
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2017-2021 <a href="http://example.com/" target="_blank">KangLeon</a>
+    		&copy; 2017-2021 <a href="http://www.jiyoung.cn/" target="_blank">KangLeon</a>
     	</div>
       	<div class="footer-right">
 			
@@ -763,11 +763,11 @@ id _obj_rootInit(id obj)&#123;
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">flutter</a>
+                <a href="javascript:void(0)" class="js-tag color3">Go</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">性能</a>
+                <a href="javascript:void(0)" class="js-tag color5">语言基础</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -779,11 +779,15 @@ id _obj_rootInit(id obj)&#123;
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">Go</a>
+                <a href="javascript:void(0)" class="js-tag color3">flutter</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">语言基础</a>
+                <a href="javascript:void(0)" class="js-tag color3">性能</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -795,19 +799,7 @@ id _obj_rootInit(id obj)&#123;
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
+                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -819,11 +811,19 @@ id _obj_rootInit(id obj)&#123;
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
+                <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
               </li>
             
             <div class="clearfix"></div>
