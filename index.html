@@ -193,6 +193,149 @@
             
 
   
+    <article id="post-RxSwift学习笔记" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2021/03/31/RxSwift%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" target="_blank">RXSwift学习笔记</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2021/03/31/RxSwift%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="archive-article-date">
+        <time datetime="2021-03-31T14:51:17.924Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-03-31</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    <h2 id="为什么使用RXSwift？"><a href="#为什么使用RXSwift？" class="headerlink" title="为什么使用RXSwift？"></a>为什么使用RXSwift？</h2><h3 id="1-代替Target-Action"><a href="#1-代替Target-Action" class="headerlink" title="1.代替Target Action"></a>1.代替Target Action</h3><pre><code>button.rx.tap
+.subscribe(onNext: &#123;
+    print(&quot;button Tapped&quot;)
+&#125;)
+.disposed(by: disposeBag)
+</code></pre>
+<h3 id="2-代替代理"><a href="#2-代替代理" class="headerlink" title="2.代替代理"></a>2.代替代理</h3><pre><code>scrollView.rx.contentOffset
+            .subscribe(onNext: &#123; contentOffset in
+                print(&quot;contentOffset: \(contentOffset)&quot;)
+            &#125;)
+            .disposed(by: disposeBag)
+    &#125;
+&#125;
+</code></pre>
+<h3 id="3-代替闭包回调"><a href="#3-代替闭包回调" class="headerlink" title="3.代替闭包回调"></a>3.代替闭包回调</h3><pre><code>URLSession.shared.rx.data(request: URLRequest(url: url))
+    .subscribe(onNext: &#123; data in
+        print(&quot;Data Task Success with count: \(data.count)&quot;)
+    &#125;, onError: &#123; error in
+        print(&quot;Data Task Error: \(error)&quot;)
+    &#125;)
+    .disposed(by: disposeBag)
+    
+</code></pre>
+<h3 id="4-代替通知"><a href="#4-代替通知" class="headerlink" title="4.代替通知"></a>4.代替通知</h3><pre><code>NotificationCenter.default.rx
+        .notification(.UIApplicationWillEnterForeground)
+        .subscribe(onNext: &#123; (notification) in
+            print(&quot;Application Will Enter Foreground&quot;)
+        &#125;)
+        .disposed(by: disposeBag)
+</code></pre>
+<h3 id="5-对于多个任务之间有依赖关系的"><a href="#5-对于多个任务之间有依赖关系的" class="headerlink" title="5.对于多个任务之间有依赖关系的"></a>5.对于多个任务之间有依赖关系的</h3><p>例如，先通过用户名密码取得 Token 然后通过 Token 取得用户信息，</p>
+<p>传统实现方法：</p>
+<pre><code>/// 用回调的方式封装接口
+enum API &#123;
+/// 通过用户名密码取得一个 token
+static func token(username: String, password: String,
+    success: (String) -&gt; Void,
+    failure: (Error) -&gt; Void) &#123; ... &#125;
+</code></pre>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">iOS</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">RXSwift</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/iOS//" class="article-tag-list-link color4">iOS</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/iOS/RXSwift//" class="article-tag-list-link color3">RXSwift</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2021/03/31/RxSwift%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-Go语言中文网学习笔记：" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -2742,103 +2885,6 @@ return cell;
 
 
   
-    <article id="post-个人知识结构快速导航" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2019/02/20/%E4%B8%AA%E4%BA%BA%E7%9F%A5%E8%AF%86%E7%BB%93%E6%9E%84%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA/" target="_blank">个人知识结构快速查阅</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2019/02/20/%E4%B8%AA%E4%BA%BA%E7%9F%A5%E8%AF%86%E7%BB%93%E6%9E%84%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA/" class="archive-article-date">
-        <time datetime="2019-02-20T07:58:50.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-02-20</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    <p><img src="/uploads/images/PERSONAL_IMAGE.png"></p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">知识结构</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/iOS//" class="article-tag-list-link color4">iOS</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2019/02/20/%E4%B8%AA%E4%BA%BA%E7%9F%A5%E8%AF%86%E7%BB%93%E6%9E%84%E5%BF%AB%E9%80%9F%E5%AF%BC%E8%88%AA/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
@@ -2955,14 +3001,6 @@ return cell;
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">flutter</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">性能</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">iOS</a>
               </li>
              
@@ -2979,11 +3017,19 @@ return cell;
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">flutter</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">性能</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
+                <a href="javascript:void(0)" class="js-tag color3">RXSwift</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2992,6 +3038,10 @@ return cell;
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">Written examination</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
               </li>
              
               <li class="article-tag-list-item">
