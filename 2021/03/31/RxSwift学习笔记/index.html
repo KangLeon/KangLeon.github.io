@@ -18,7 +18,7 @@
 <meta property="og:description" content="为什么使用RXSwift？ 复合 - Rx 就是复合的代名词 复用 - 因为它易复合 清晰 - 因为声明都是不可变更的 易用 - 因为它抽象的了异步编程，使我们统一了代码风格 稳定 - 因为 Rx 是完全通过单元测试的  1.代替Target Actionbutton.rx.tap .subscribe(onNext: &amp;#123;     print(&quot;button Tapped&amp;qu">
 <meta property="og:locale">
 <meta property="article:published_time" content="2021-03-31T14:51:17.000Z">
-<meta property="article:modified_time" content="2021-04-01T06:45:34.265Z">
+<meta property="article:modified_time" content="2021-04-08T02:15:40.840Z">
 <meta property="article:author" content="KangLeon">
 <meta property="article:tag" content="iOS">
 <meta property="article:tag" content="RXSwift">
@@ -218,7 +218,7 @@
       <!-- 百度字体平台:http://fontstore.baidu.com/static/editor/index.html -->
       <i class="icon-statistics"></i>
       <span class="post-meta-item-text"> 字数统计:</span>
-      <span class="post-count">1.2k字</span>
+      <span class="post-count">2.1k字</span>
     </span>
   </span>
 
@@ -227,7 +227,7 @@
     <span class="post-meta-item-icon">
       <i class="icon-book icon"></i>
       <span class="post-meta-item-text"> 阅读时长≈</span>
-      <span class="post-count">5分</span>
+      <span class="post-count">9分</span>
     </span>
   </span>
 </div>
@@ -422,6 +422,89 @@ imageView.image = image
 let image: Observable&lt;UIImage&gt; = ...
 image.bind(to: imageView.rx.image)
 </code></pre>
+<p>第一段代码我们非常熟悉，它就是将一个单独的图片设置到imageView上。<br>第二段代码则是将一个图片序列 “同步” 到imageView上。这个序列里面的图片可以是异步产生的。这里定义的 image 就是上图中蓝色部分（可监听序列），imageView.rx.image就是上图中橙色部分（观察者）。而这种 “同步机制” 就是数据绑定（订阅）。    </p>
+<h3 id="11-Observable-可监听序列"><a href="#11-Observable-可监听序列" class="headerlink" title="11.Observable - 可监听序列"></a>11.Observable - 可监听序列</h3><p>“Observable 可以用于描述元素异步产生的序列。”</p>
+<h4 id="如何创建序列"><a href="#如何创建序列" class="headerlink" title="如何创建序列?"></a>如何创建序列?</h4><p>实际上，框架已经帮我们创建好了许多常用的序列。例如：button的点击，textField的当前文本，switch的开关状态，slider的当前数值等等。</p>
+<pre><code>let numbers: Observable&lt;Int&gt; = Observable.create &#123; observer -&gt; Disposable in
+
+    observer.onNext(0)
+    observer.onNext(1)
+    observer.onNext(2)
+    observer.onNext(3)
+    observer.onNext(4)
+    observer.onNext(5)
+    observer.onNext(6)
+    observer.onNext(7)
+    observer.onNext(8)
+    observer.onNext(9)
+    observer.onCompleted()
+
+    return Disposables.create()
+&#125;
+</code></pre>
+<p>创建序列最直接的方法就是调用 Observable.create，然后在构建函数里面描述元素的产生过程。 observer.onNext(0) 就代表产生了一个元素，他的值是 0。后面又产生了 9 个元素分别是 1, 2, … 8, 9 。最后，用 observer.onCompleted() 表示元素已经全部产生，没有更多元素了。</p>
+<p>你可以用这种方式来封装功能组件，例如，闭包回调：</p>
+<pre><code>typealias JSON = Any
+
+let json: Observable&lt;JSON&gt; = Observable.create &#123; (observer) -&gt; Disposable in
+
+let task = 
+URLSession.shared.dataTask(with: ...) &#123; data, _, error in
+
+    guard error == nil else &#123;
+        observer.onError(error!)
+        return
+    &#125;
+
+    guard let data = data,
+        let jsonObject = try? JSONSerialization.jsonObject(with: data, options: .mutableLeaves)
+        else &#123;
+        observer.onError(DataError.cantParseJSON)
+        return
+    &#125;
+
+    observer.onNext(jsonObject)
+    observer.onCompleted()
+ &#125;
+
+task.resume()
+
+return Disposables.create &#123; task.cancel() &#125;
+&#125;
+</code></pre>
+<p>在闭包回调中，如果任务失败，就调用 observer.onError(error!)。如果获取到目标元素，就调用 observer.onNext(jsonObject)。由于我们的这个序列只有一个元素，所以在成功获取到元素后，就直接调用 observer.onCompleted() 来表示任务结束。最后 Disposables.create { task.cancel() } 说明如果数据绑定被清除（订阅被取消）的话，就取消网络请求。</p>
+<p>这样一来我们就将传统的闭包回调转换成序列了。然后可以用 subscribe 方法来响应这个请求的结果：</p>
+<pre><code>json
+    .subscribe(onNext: &#123; json in
+        print(&quot;取得 json 成功: \(json)&quot;)
+    &#125;, onError: &#123; error in
+        print(&quot;取得 json 失败 Error: \(error.localizedDescription)&quot;)
+    &#125;, onCompleted: &#123;
+        print(&quot;取得 json 任务成功完成&quot;)
+    &#125;)
+    .disposed(by: disposeBag) 
+</code></pre>
+<p>这里subscribe后面的onNext,onError, onCompleted 分别响应我们创建 json 时，构建函数里面的onNext,onError, onCompleted 事件。我们称这些事件为 <em>Event</em>: </p>
+<h3 id="Event-事件"><a href="#Event-事件" class="headerlink" title="Event - 事件"></a>Event - 事件</h3><pre><code>public enum Event&lt;Element&gt; &#123;
+    case next(Element)
+    case error(Swift.Error)
+    case completed
+&#125;
+</code></pre>
+<ul>
+<li>next - 序列产生了一个新的元素</li>
+<li>error - 创建序列时产生了一个错误，导致序列终止</li>
+<li>completed - 序列的所有元素都已经成功产生，整个序列已经完成<br>你可以合理的利用这些 Event 来实现业务逻辑。</li>
+</ul>
+<h3 id="特征序列"><a href="#特征序列" class="headerlink" title="特征序列"></a>特征序列</h3><p>在 RxSwift 里面 Observable 也存在一些特征序列，这些特征序列可以帮助我们更准确的描述序列。并且它们还可以给我们提供语法糖，让我们能够用更加优雅的方式书写代码，他们分别是：</p>
+<ul>
+<li>Single</li>
+<li>Completable</li>
+<li>Maybe</li>
+<li>Driver</li>
+<li>Signal</li>
+<li>ControlEvent</li>
+</ul>
 
     
 
@@ -618,7 +701,7 @@ image.bind(to: imageView.rx.image)
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8RXSwift%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">为什么使用RXSwift？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E4%BB%A3%E6%9B%BFTarget-Action"><span class="toc-number">1.1.</span> <span class="toc-text">1.代替Target Action</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E4%BB%A3%E6%9B%BF%E4%BB%A3%E7%90%86"><span class="toc-number">1.2.</span> <span class="toc-text">2.代替代理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%BB%A3%E6%9B%BF%E9%97%AD%E5%8C%85%E5%9B%9E%E8%B0%83"><span class="toc-number">1.3.</span> <span class="toc-text">3.代替闭包回调</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E4%BB%A3%E6%9B%BF%E9%80%9A%E7%9F%A5"><span class="toc-number">1.4.</span> <span class="toc-text">4.代替通知</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E5%AF%B9%E4%BA%8E%E5%A4%9A%E4%B8%AA%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E6%9C%89%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB%E7%9A%84"><span class="toc-number">1.5.</span> <span class="toc-text">5.对于多个任务之间有依赖关系的</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="toc-number">1.5.1.</span> <span class="toc-text">传统实现方法：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%9A%E8%BF%87Rx%E6%9D%A5%E5%AE%9E%E7%8E%B0%EF%BC%9A"><span class="toc-number">1.5.2.</span> <span class="toc-text">通过Rx来实现：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E7%AD%89%E5%BE%85%E5%A4%9A%E4%B8%AA%E5%B9%B6%E5%8F%91%E4%BB%BB%E5%8A%A1%E5%AE%8C%E6%88%90%E5%90%8E%E5%A4%84%E7%90%86"><span class="toc-number">1.6.</span> <span class="toc-text">6.等待多个并发任务完成后处理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%9A%E8%BF%87-Rx-%E6%9D%A5%E5%AE%9E%E7%8E%B0%EF%BC%9A"><span class="toc-number">1.6.1.</span> <span class="toc-text">通过 Rx 来实现：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-%E4%BB%A5%E4%B8%8B%E6%98%AF%E7%BB%8F%E5%85%B8%E7%99%BB%E5%BD%95Demo%EF%BC%9A"><span class="toc-number">1.7.</span> <span class="toc-text">7.以下是经典登录Demo：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B"><span class="toc-number">1.8.</span> <span class="toc-text">8.函数式编程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-%E5%87%BD%E6%95%B0%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BC%96%E7%A8%8B"><span class="toc-number">1.9.</span> <span class="toc-text">9.函数响应式编程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-%E6%95%B0%E6%8D%AE%E7%BB%91%E5%AE%9A%EF%BC%88%E8%AE%A2%E9%98%85%EF%BC%89"><span class="toc-number">1.10.</span> <span class="toc-text">10.数据绑定（订阅）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%88%91%E4%BB%AC%E5%AF%B9%E6%AF%94%E4%B8%80%E4%B8%8B%E8%BF%99%E4%B8%A4%E6%AE%B5%E4%BB%A3%E7%A0%81%EF%BC%9A"><span class="toc-number">1.10.1.</span> <span class="toc-text">我们对比一下这两段代码：</span></a></li></ol></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8RXSwift%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">为什么使用RXSwift？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E4%BB%A3%E6%9B%BFTarget-Action"><span class="toc-number">1.1.</span> <span class="toc-text">1.代替Target Action</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E4%BB%A3%E6%9B%BF%E4%BB%A3%E7%90%86"><span class="toc-number">1.2.</span> <span class="toc-text">2.代替代理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%BB%A3%E6%9B%BF%E9%97%AD%E5%8C%85%E5%9B%9E%E8%B0%83"><span class="toc-number">1.3.</span> <span class="toc-text">3.代替闭包回调</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E4%BB%A3%E6%9B%BF%E9%80%9A%E7%9F%A5"><span class="toc-number">1.4.</span> <span class="toc-text">4.代替通知</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E5%AF%B9%E4%BA%8E%E5%A4%9A%E4%B8%AA%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E6%9C%89%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB%E7%9A%84"><span class="toc-number">1.5.</span> <span class="toc-text">5.对于多个任务之间有依赖关系的</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="toc-number">1.5.1.</span> <span class="toc-text">传统实现方法：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%9A%E8%BF%87Rx%E6%9D%A5%E5%AE%9E%E7%8E%B0%EF%BC%9A"><span class="toc-number">1.5.2.</span> <span class="toc-text">通过Rx来实现：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E7%AD%89%E5%BE%85%E5%A4%9A%E4%B8%AA%E5%B9%B6%E5%8F%91%E4%BB%BB%E5%8A%A1%E5%AE%8C%E6%88%90%E5%90%8E%E5%A4%84%E7%90%86"><span class="toc-number">1.6.</span> <span class="toc-text">6.等待多个并发任务完成后处理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%80%9A%E8%BF%87-Rx-%E6%9D%A5%E5%AE%9E%E7%8E%B0%EF%BC%9A"><span class="toc-number">1.6.1.</span> <span class="toc-text">通过 Rx 来实现：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-%E4%BB%A5%E4%B8%8B%E6%98%AF%E7%BB%8F%E5%85%B8%E7%99%BB%E5%BD%95Demo%EF%BC%9A"><span class="toc-number">1.7.</span> <span class="toc-text">7.以下是经典登录Demo：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B"><span class="toc-number">1.8.</span> <span class="toc-text">8.函数式编程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-%E5%87%BD%E6%95%B0%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BC%96%E7%A8%8B"><span class="toc-number">1.9.</span> <span class="toc-text">9.函数响应式编程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-%E6%95%B0%E6%8D%AE%E7%BB%91%E5%AE%9A%EF%BC%88%E8%AE%A2%E9%98%85%EF%BC%89"><span class="toc-number">1.10.</span> <span class="toc-text">10.数据绑定（订阅）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%88%91%E4%BB%AC%E5%AF%B9%E6%AF%94%E4%B8%80%E4%B8%8B%E8%BF%99%E4%B8%A4%E6%AE%B5%E4%BB%A3%E7%A0%81%EF%BC%9A"><span class="toc-number">1.10.1.</span> <span class="toc-text">我们对比一下这两段代码：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-Observable-%E5%8F%AF%E7%9B%91%E5%90%AC%E5%BA%8F%E5%88%97"><span class="toc-number">1.11.</span> <span class="toc-text">11.Observable - 可监听序列</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E5%BA%8F%E5%88%97"><span class="toc-number">1.11.1.</span> <span class="toc-text">如何创建序列?</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Event-%E4%BA%8B%E4%BB%B6"><span class="toc-number">1.12.</span> <span class="toc-text">Event - 事件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%89%B9%E5%BE%81%E5%BA%8F%E5%88%97"><span class="toc-number">1.13.</span> <span class="toc-text">特征序列</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -761,10 +844,6 @@ image.bind(to: imageView.rx.image)
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">性能</a>
               </li>
              
@@ -777,15 +856,19 @@ image.bind(to: imageView.rx.image)
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">RXSwift</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -797,7 +880,7 @@ image.bind(to: imageView.rx.image)
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
+                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -809,15 +892,15 @@ image.bind(to: imageView.rx.image)
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
               </li>
             
             <div class="clearfix"></div>

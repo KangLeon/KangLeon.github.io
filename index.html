@@ -622,6 +622,89 @@ imageView.image = image
 let image: Observable&lt;UIImage&gt; = ...
 image.bind(to: imageView.rx.image)
 </code></pre>
+<p>第一段代码我们非常熟悉，它就是将一个单独的图片设置到imageView上。<br>第二段代码则是将一个图片序列 “同步” 到imageView上。这个序列里面的图片可以是异步产生的。这里定义的 image 就是上图中蓝色部分（可监听序列），imageView.rx.image就是上图中橙色部分（观察者）。而这种 “同步机制” 就是数据绑定（订阅）。    </p>
+<h3 id="11-Observable-可监听序列"><a href="#11-Observable-可监听序列" class="headerlink" title="11.Observable - 可监听序列"></a>11.Observable - 可监听序列</h3><p>“Observable 可以用于描述元素异步产生的序列。”</p>
+<h4 id="如何创建序列"><a href="#如何创建序列" class="headerlink" title="如何创建序列?"></a>如何创建序列?</h4><p>实际上，框架已经帮我们创建好了许多常用的序列。例如：button的点击，textField的当前文本，switch的开关状态，slider的当前数值等等。</p>
+<pre><code>let numbers: Observable&lt;Int&gt; = Observable.create &#123; observer -&gt; Disposable in
+
+    observer.onNext(0)
+    observer.onNext(1)
+    observer.onNext(2)
+    observer.onNext(3)
+    observer.onNext(4)
+    observer.onNext(5)
+    observer.onNext(6)
+    observer.onNext(7)
+    observer.onNext(8)
+    observer.onNext(9)
+    observer.onCompleted()
+
+    return Disposables.create()
+&#125;
+</code></pre>
+<p>创建序列最直接的方法就是调用 Observable.create，然后在构建函数里面描述元素的产生过程。 observer.onNext(0) 就代表产生了一个元素，他的值是 0。后面又产生了 9 个元素分别是 1, 2, … 8, 9 。最后，用 observer.onCompleted() 表示元素已经全部产生，没有更多元素了。</p>
+<p>你可以用这种方式来封装功能组件，例如，闭包回调：</p>
+<pre><code>typealias JSON = Any
+
+let json: Observable&lt;JSON&gt; = Observable.create &#123; (observer) -&gt; Disposable in
+
+let task = 
+URLSession.shared.dataTask(with: ...) &#123; data, _, error in
+
+    guard error == nil else &#123;
+        observer.onError(error!)
+        return
+    &#125;
+
+    guard let data = data,
+        let jsonObject = try? JSONSerialization.jsonObject(with: data, options: .mutableLeaves)
+        else &#123;
+        observer.onError(DataError.cantParseJSON)
+        return
+    &#125;
+
+    observer.onNext(jsonObject)
+    observer.onCompleted()
+ &#125;
+
+task.resume()
+
+return Disposables.create &#123; task.cancel() &#125;
+&#125;
+</code></pre>
+<p>在闭包回调中，如果任务失败，就调用 observer.onError(error!)。如果获取到目标元素，就调用 observer.onNext(jsonObject)。由于我们的这个序列只有一个元素，所以在成功获取到元素后，就直接调用 observer.onCompleted() 来表示任务结束。最后 Disposables.create { task.cancel() } 说明如果数据绑定被清除（订阅被取消）的话，就取消网络请求。</p>
+<p>这样一来我们就将传统的闭包回调转换成序列了。然后可以用 subscribe 方法来响应这个请求的结果：</p>
+<pre><code>json
+    .subscribe(onNext: &#123; json in
+        print(&quot;取得 json 成功: \(json)&quot;)
+    &#125;, onError: &#123; error in
+        print(&quot;取得 json 失败 Error: \(error.localizedDescription)&quot;)
+    &#125;, onCompleted: &#123;
+        print(&quot;取得 json 任务成功完成&quot;)
+    &#125;)
+    .disposed(by: disposeBag) 
+</code></pre>
+<p>这里subscribe后面的onNext,onError, onCompleted 分别响应我们创建 json 时，构建函数里面的onNext,onError, onCompleted 事件。我们称这些事件为 <em>Event</em>: </p>
+<h3 id="Event-事件"><a href="#Event-事件" class="headerlink" title="Event - 事件"></a>Event - 事件</h3><pre><code>public enum Event&lt;Element&gt; &#123;
+    case next(Element)
+    case error(Swift.Error)
+    case completed
+&#125;
+</code></pre>
+<ul>
+<li>next - 序列产生了一个新的元素</li>
+<li>error - 创建序列时产生了一个错误，导致序列终止</li>
+<li>completed - 序列的所有元素都已经成功产生，整个序列已经完成<br>你可以合理的利用这些 Event 来实现业务逻辑。</li>
+</ul>
+<h3 id="特征序列"><a href="#特征序列" class="headerlink" title="特征序列"></a>特征序列</h3><p>在 RxSwift 里面 Observable 也存在一些特征序列，这些特征序列可以帮助我们更准确的描述序列。并且它们还可以给我们提供语法糖，让我们能够用更加优雅的方式书写代码，他们分别是：</p>
+<ul>
+<li>Single</li>
+<li>Completable</li>
+<li>Maybe</li>
+<li>Driver</li>
+<li>Signal</li>
+<li>ControlEvent</li>
+</ul>
 
     
 
@@ -2890,10 +2973,6 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">性能</a>
               </li>
              
@@ -2906,15 +2985,19 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">RXSwift</a>
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color4">RAC+MVVM</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2926,7 +3009,7 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
+                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2938,15 +3021,15 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
               </li>
             
             <div class="clearfix"></div>
