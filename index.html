@@ -705,6 +705,32 @@ return Disposables.create &#123; task.cancel() &#125;
 <li>Signal</li>
 <li>ControlEvent</li>
 </ul>
+<h3 id="Single"><a href="#Single" class="headerlink" title="Single"></a>Single</h3><p>Single 是 Observable 的另外一个版本。不像 Observable 可以发出多个元素，它要么只能发出一个元素，要么产生一个 error 事件。</p>
+<p>发出一个元素，或一个 error 事件<br>不会共享附加作用<br>一个比较常见的例子就是执行 HTTP 请求，然后返回一个应答或错误。不过你也可以用 Single 来描述任何只有一个元素的序列。</p>
+<h4 id="如何创建-Single"><a href="#如何创建-Single" class="headerlink" title="如何创建 Single?"></a>如何创建 Single?</h4><p>创建 Single 和创建 Observable 非常相似：</p>
+<p>func getRepo(_ repo: String) -&gt; Single&lt;[String: Any]&gt; {</p>
+<pre><code>return Single&lt;[String: Any]&gt;.create &#123; single in
+</code></pre>
+<p> let url = URL(string: “<a target="_blank" rel="noopener" href="https://api.github.com/repos//(repo)&quot;">https://api.github.com/repos/\(repo)&quot;</a>)!<br>        let task = URLSession.shared.dataTask(with: url) {<br>            data, _, error in</p>
+<pre><code>        if let error = error &#123;
+            single(.error(error))
+            return
+        &#125;
+
+        guard let data = data,
+              let json = try? JSONSerialization.jsonObject(with: data, options: .mutableLeaves),
+              let result = json as? [String: Any] else &#123;
+            single(.error(DataError.cantParseJSON))
+            return
+        &#125;
+</code></pre>
+<p>single(.success(result))<br>        }</p>
+<pre><code>    task.resume()
+
+    return Disposables.create &#123; task.cancel() &#125;
+&#125;
+</code></pre>
+<p>}</p>
 
     
 
@@ -2961,15 +2987,11 @@ NS_ASSUME_NONNULL_BEGIN
           <ul class="article-tag-list" q-show="showTags">
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color4">iOS</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">Book</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">flutter</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">源码</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2985,7 +3007,7 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">RXSwift</a>
+                <a href="javascript:void(0)" class="js-tag color4">iOS</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2993,11 +3015,7 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">源码</a>
+                <a href="javascript:void(0)" class="js-tag color3">RXSwift</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -3009,7 +3027,11 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
+                <a href="javascript:void(0)" class="js-tag color1">Will Power</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">Book</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -3025,11 +3047,15 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
               </li>
             
             <div class="clearfix"></div>
