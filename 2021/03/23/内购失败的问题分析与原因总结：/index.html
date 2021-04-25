@@ -10,20 +10,26 @@
   <meta name="generator" content="hexo-theme-yilia-plus">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   
-  <meta name="description" content="内购失败的问题分析与原因总结：1.无法连接到 iTunes Store： DNS问题：进入 WiFi，找到「配置 DNS」，设置为「手动」，在最顶部添加「114.114.114.114」或「8.8.8.8」；  重复购买vip：storekit文档明确指出“如果用户试图购买他们已经购买的非消费产品或可更新订阅，您的应用程序将收到该项目的常规交易，而不是恢复交易 . 但是，该产品不会再次向用户收取费">
+  <meta name="description" content="提要：本篇主要涉及到内购中的疑难杂证，不是基础内购接入流程 最近公司上线了一款社交类应用，这是一款采用了flutter技术开发的应用，对于该项目还是很满意的，收入在同行算中等，重要的是对于flutter技术的掌握也更近一步，话不多说回归正题。 App想要变现的话一定就要接入内购，在此之中遇到了一些问题，以下是遇到问题的汇总与分析： 1.接入内购时的后端票据验证：票据验证涉及到两个接口： https">
 <meta property="og:type" content="article">
 <meta property="og:title" content="内购失败的问题分析与原因总结">
 <meta property="og:url" content="http://www.jiyoung.cn/2021/03/23/%E5%86%85%E8%B4%AD%E5%A4%B1%E8%B4%A5%E7%9A%84%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90%E4%B8%8E%E5%8E%9F%E5%9B%A0%E6%80%BB%E7%BB%93%EF%BC%9A/index.html">
 <meta property="og:site_name" content="JY">
-<meta property="og:description" content="内购失败的问题分析与原因总结：1.无法连接到 iTunes Store： DNS问题：进入 WiFi，找到「配置 DNS」，设置为「手动」，在最顶部添加「114.114.114.114」或「8.8.8.8」；  重复购买vip：storekit文档明确指出“如果用户试图购买他们已经购买的非消费产品或可更新订阅，您的应用程序将收到该项目的常规交易，而不是恢复交易 . 但是，该产品不会再次向用户收取费">
+<meta property="og:description" content="提要：本篇主要涉及到内购中的疑难杂证，不是基础内购接入流程 最近公司上线了一款社交类应用，这是一款采用了flutter技术开发的应用，对于该项目还是很满意的，收入在同行算中等，重要的是对于flutter技术的掌握也更近一步，话不多说回归正题。 App想要变现的话一定就要接入内购，在此之中遇到了一些问题，以下是遇到问题的汇总与分析： 1.接入内购时的后端票据验证：票据验证涉及到两个接口： https">
 <meta property="og:locale">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/%E5%86%85%E8%B4%AD/img_1.jpg">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/%E5%86%85%E8%B4%AD/img_2.jpeg">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/%E5%86%85%E8%B4%AD/img_3.jpeg">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/%E5%86%85%E8%B4%AD/img_4.jpg">
+<meta property="og:image" content="http://www.jiyoung.cn/uploads/images/%E5%86%85%E8%B4%AD/img_5.png">
 <meta property="article:published_time" content="2021-03-23T05:30:38.553Z">
-<meta property="article:modified_time" content="2021-03-26T07:26:15.718Z">
+<meta property="article:modified_time" content="2021-04-25T06:22:01.072Z">
 <meta property="article:author" content="KangLeon">
 <meta property="article:tag" content="iOS">
 <meta property="article:tag" content="内购">
 <meta property="article:tag" content="错误">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.jiyoung.cn/uploads/images/%E5%86%85%E8%B4%AD/img_1.jpg">
   
     <link rel="alternative" href="/atom.xml" title="JY" type="application/atom+xml">
   
@@ -219,7 +225,7 @@
       <!-- 百度字体平台:http://fontstore.baidu.com/static/editor/index.html -->
       <i class="icon-statistics"></i>
       <span class="post-meta-item-text"> 字数统计:</span>
-      <span class="post-count">462字</span>
+      <span class="post-count">3.7k字</span>
     </span>
   </span>
 
@@ -228,7 +234,7 @@
     <span class="post-meta-item-icon">
       <i class="icon-book icon"></i>
       <span class="post-meta-item-text"> 阅读时长≈</span>
-      <span class="post-count">1分</span>
+      <span class="post-count">17分</span>
     </span>
   </span>
 </div>
@@ -239,25 +245,256 @@
   
   <div class="article-entry" itemprop="articleBody">
     
-    <h2 id="内购失败的问题分析与原因总结："><a href="#内购失败的问题分析与原因总结：" class="headerlink" title="内购失败的问题分析与原因总结："></a>内购失败的问题分析与原因总结：</h2><h3 id="1-无法连接到-iTunes-Store："><a href="#1-无法连接到-iTunes-Store：" class="headerlink" title="1.无法连接到 iTunes Store："></a>1.无法连接到 iTunes Store：</h3><ul>
-<li><p>DNS问题：进入 WiFi，找到「配置 DNS」，设置为「手动」，在最顶部添加「114.114.114.114」或「8.8.8.8」；</p>
+    <p>提要：本篇主要涉及到内购中的疑难杂证，不是基础内购接入流程</p>
+<p>最近公司上线了一款社交类应用，这是一款采用了flutter技术开发的应用，对于该项目还是很满意的，收入在同行算中等，重要的是对于flutter技术的掌握也更近一步，话不多说回归正题。</p>
+<p>App想要变现的话一定就要接入内购，在此之中遇到了一些问题，以下是遇到问题的汇总与分析：</p>
+<h4 id="1-接入内购时的后端票据验证："><a href="#1-接入内购时的后端票据验证：" class="headerlink" title="1.接入内购时的后端票据验证："></a>1.接入内购时的后端票据验证：</h4><p><strong>票据验证涉及到两个接口：</strong></p>
+<p><a target="_blank" rel="noopener" href="https://sandbox.itunes.apple.com/verifyReceipt%EF%BC%88%E6%B2%99%E7%9B%92%EF%BC%89">https://sandbox.itunes.apple.com/verifyReceipt（沙盒）</a><br><a target="_blank" rel="noopener" href="https://buy.itunes.apple.com/verifyReceipt%EF%BC%88%E6%AD%A3%E5%BC%8F%EF%BC%89">https://buy.itunes.apple.com/verifyReceipt（正式）</a></p>
+<p><strong>这里有个坑是</strong>：当App审核的时候，实际上苹果审核人员使用的是沙盒支付环境，所以后端应该在这里做一下处理，有三种处理方式：1.当你的环境切为正式环境提交审核时，假如验证票据是21007，那么后端应该补调一下沙盒的验证接口；2.或者就是加一个审核态的标识，如果审核态时，使用沙盒的接口；3.后端实际上不用前端传任何东西，拿到票据时，自己判断是沙盒还是生产环境（我们采用此种做法）</p>
+<p>（有很多开发者因为在审核态时，用生产接口验证票据被拒）</p>
+<p><strong>以下是票据验证的报错以及原因</strong>：</p>
+<p>21000 App Store无法读取你提供的JSON数据<br>21002 收据数据不符合格式<br>21003 收据无法被验证<br>21004 你提供的共享密钥和账户的共享密钥不一致<br>21005 收据服务器当前不可用<br>21006 收据是有效的，但订阅服务已经过期。当收到这个信息时，解码后的收据信息也包含在返回内容中<br>21007 收据信息是测试用（sandbox），但却被发送到产品环境中验证<br>21008 收据信息是产品环境中使用，但却被发送到测试环境中验证 </p>
+<p>还有个坑是：对于订阅类的产品，验证票据需要加password字段，这个是你App Store Connect上面创建的共享密钥，把这个密钥给后端就好</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_1.jpg"></p>
+<h4 id="2-接入内购时是否包含自动续订类产品："><a href="#2-接入内购时是否包含自动续订类产品：" class="headerlink" title="2.接入内购时是否包含自动续订类产品："></a>2.接入内购时是否包含自动续订类产品：</h4><p>如果包含自动续订类的产品，那么一定切记要在订阅产品购买页加上会员服务协议，苹果要求这个协议必须要有，同时你还应该在协议里描述清楚你的续订类产品的详细信息以及续订规则，取消规则，请为用户负责。</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_2.jpeg"></p>
+<p>如果可能，最好把会员服务协议链接和续订类产品的详细信息以及续订规则，取消规则写在商店宣传文案下面。</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_3.jpeg"></p>
+<p>（有很多开发者因为没有任何协议导致被拒）</p>
+<h4 id="3-内购的报错原因最好详细展开有助于分析："><a href="#3-内购的报错原因最好详细展开有助于分析：" class="headerlink" title="3.内购的报错原因最好详细展开有助于分析："></a>3.内购的报错原因最好详细展开有助于分析：</h4><p>我们的内购流程有详细的埋点跟踪用户操作的流程以及失败原因，统计失败错误可以定位并分析到对应的错误原因。</p>
+<p>但是支付失败可能产生于不同的地方，以及我们应该在何处进行边界判断：</p>
+<h5 id="productId是否合法"><a href="#productId是否合法" class="headerlink" title="productId是否合法"></a>productId是否合法</h5><pre><code>//校验productID是否合法
+                guard (self.currentProductId != nil &amp;&amp; self.currentProductId!.count &gt; 0) else &#123;
+                    #if DEBUG
+                    SVProgressHUD.showInfo(withStatus: &quot;1.1 商品id不合法&quot;)
+                    SVProgressHUD.dismiss(withDelay: 3.0)
+                    #endif
+                    
+                    return
+                &#125;
+                
+                //开始支付流程
+                startCharge()
+</code></pre>
+<p>绝大多数不会因为这个原因导致支付失败，因为我们一般按照正常逻辑接入支付，支付数据一般也是正常的，而且假如发起了<em>SKProductsRequest</em>后，没有找到该productId，也会提示未找到商品：</p>
+<pre><code>...
+
+func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) &#123;
+
+productList = response.products
+        
+        var curProduct :SKProduct?
+         if let tem_productList = productList &#123;
+            if tem_productList.count==0 &#123;
+                //如果商品列表为空，那么提示用户没有找到商品
+                if let reusltBlock = self.result&#123;
+                    let parameter: [String:String] = [
+                                             &quot;state&quot;:&quot;failed&quot;,
+                                             &quot;msg&quot;:&quot;The product was not                             found&quot;,&quot;isShowAlert&quot;:&quot;1&quot;,&quot;isShowDialog&quot;:&quot;0&quot;]
+                    reusltBlock(parameter)
+                    
+                    return
+                &#125;
+            &#125;
+...
+&#125;
+</code></pre>
+<p>但是假如你没有头绪时，不妨检查下productId是否合法。</p>
+<h5 id="检查设备是否允许支付"><a href="#检查设备是否允许支付" class="headerlink" title="检查设备是否允许支付"></a>检查设备是否允许支付</h5><pre><code>if SKPaymentQueue.canMakePayments() &#123;
+            //user允许支付
+            if let proId = currentProductId &#123;
+                let requestSet = Set.init([proId])
+                payRequest = SKProductsRequest.init(productIdentifiers: requestSet)
+                //设置支付请求代理
+                payRequest?.delegate=self
+                payRequest?.start()
+            &#125;
+        &#125;else&#123;
+            //user不允许支付
+            if let reusltBlock = self.result&#123;
+                let parameter: [String:String] = [
+                                         &quot;state&quot;:&quot;failed&quot;,
+                                         &quot;msg&quot;:&quot;The user is not allowed to make payments.&quot;,
+                                         &quot;isShowAlert&quot;:&quot;1&quot;,&quot;isShowDialog&quot;:&quot;0&quot;]
+                reusltBlock(parameter)
+            &#125;
+        &#125;
+</code></pre>
+<p>这种情况的原因是手机关闭了应用内支付，或者没有绑定支付手段，还有其他…</p>
+<p>分析了线上用户的埋点数据，这种报错不多，但是也有一些，如果是这种错误的话，请展示给用户无法进行支付的提示。</p>
+<h5 id="发起内购请求失败"><a href="#发起内购请求失败" class="headerlink" title="发起内购请求失败"></a>发起内购请求失败</h5><pre><code>//发起内购请求失败
+    func request(_ request: SKRequest, didFailWithError error: Error) &#123;
+        print(&quot;发起内购失败，失败原因：\(error.localizedDescription)&quot;)
+        
+        let tem_error = error as NSError
+        
+        #if DEBUG
+        SVProgressHUD.showInfo(withStatus: &quot;2.发起内购失败，失败Domain：\(tem_error.domain),失败code: \(tem_error.code),失败描述：\(tem_error.localizedDescription),失败信息: \(tem_error.userInfo)&quot;)
+        SVProgressHUD.dismiss(withDelay: 3.0)
+        #endif
+        
+        if let reusltBlock = self.result&#123;
+            let parameter: [String:String] = [
+                                     &quot;state&quot;:&quot;failed&quot;,
+                                     &quot;msg&quot;:&quot;2.发起内购失败，失败Domain：\(tem_error.domain),失败code: \(tem_error.code),失败描述：\(tem_error.localizedDescription),失败信息: \(tem_error.userInfo)&quot;,&quot;isShowAlert&quot;:&quot;1&quot;,&quot;isShowDialog&quot;:&quot;1&quot;]
+
+            reusltBlock(parameter)
+        &#125;
+    &#125;
+</code></pre>
+<p>这种是属于NSURLErrorDomain的错误，这种情况属于payRequest?.start()失败，大部分可以归结为网络原因，网络环境不正常，这种情况下也只可以让用户稍后重试。</p>
+<h5 id="判断func-productsRequest-request-SKProductsRequest-didReceive-response-SKProductsResponse-中返回的的商品id是否和发起内购商品id一致"><a href="#判断func-productsRequest-request-SKProductsRequest-didReceive-response-SKProductsResponse-中返回的的商品id是否和发起内购商品id一致" class="headerlink" title="判断func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse)中返回的的商品id是否和发起内购商品id一致"></a>判断func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse)中返回的的商品id是否和发起内购商品id一致</h5><p>这一步其实不是很必要，但是喜马拉雅App的代码里面有这一步判断，有可能也是有意外情况。</p>
+<h5 id="处理transactionState为-failed的交易："><a href="#处理transactionState为-failed的交易：" class="headerlink" title="处理transactionState为.failed的交易："></a>处理transactionState为.failed的交易：</h5><pre><code>//交易失败
+    func failedTransaction(transaction: SKPaymentTransaction) &#123;
+
+        let error = transaction.error as? SKError
+        
+        var message :String?
+        var isShowAlert = &quot;0&quot;//是否显示toast
+        var isShowDialog = &quot;1&quot;//是否显示Dialog
+        
+        if let code = error?.code &#123;
+            switch code &#123;
+            case .unknown:
+                message = &quot;未知错误&quot;
+            case .clientInvalid:
+                message = &quot;Client is not allowed to issue the request, etc&quot;
+            case .paymentCancelled:
+                //取消
+                message = &quot;User cancelled the request, etc&quot;
+                isShowAlert = &quot;1&quot;
+                isShowDialog = &quot;0&quot;
+            case .paymentInvalid:
+                message = &quot;Purchase identifier was invalid, etc&quot;
+            case .paymentNotAllowed:
+                //设备不支持支付
+                message = &quot;This device is not allowed to make the payment&quot;
+                isShowAlert = &quot;1&quot;
+                isShowDialog = &quot;0&quot;
+            case .storeProductNotAvailable:
+                message = &quot;Product is not available in the current storefront&quot;
+            case .cloudServicePermissionDenied:
+                message = &quot;User has not allowed access to cloud service information&quot;
+            case .cloudServiceNetworkConnectionFailed:
+                message = &quot;The device could not connect to the nework&quot;
+            case .cloudServiceRevoked:
+                message = &quot;User has revoked permission to use this cloud service&quot;
+            case .privacyAcknowledgementRequired:
+                message = &quot;The user needs to acknowledge Apple&#39;s privacy policy&quot;
+            case .unauthorizedRequestData:
+                message = &quot;The app is attempting to use SKPayment&#39;s requestData property, but does not have the appropriate entitlement&quot;
+            case .invalidOfferIdentifier:
+                message = &quot;The specified subscription offer identifier is not valid&quot;
+            case .invalidSignature:
+                message = &quot;The cryptographic signature provided is not valid&quot;
+            case .missingOfferParams:
+                message = &quot;One or more parameters from SKPaymentDiscount is missing&quot;
+            case .invalidOfferPrice:
+                message = &quot;The price of the selected offer is not valid (e.g. lower than the current base subscription price)&quot;
+            case .overlayCancelled:
+                message = &quot;OverlayCancelled&quot;
+            case .overlayInvalidConfiguration:
+                message = &quot;OverlayInvalidConfiguration&quot;
+            case .overlayTimeout:
+                message = &quot;OverlayTimeout&quot;
+            case .ineligibleForOffer:
+                message = &quot;User is not eligible for the subscription offer&quot;
+            case .unsupportedPlatform:
+                //平台不支持支付
+                message = &quot;UnsupportedPlatform&quot;
+                isShowAlert = &quot;1&quot;
+                isShowDialog = &quot;0&quot;
+            default: 
+                message = &quot;Default&quot;
+            &#125;
+        &#125;
+        
+        #if DEBUG
+        SVProgressHUD.showInfo(withStatus: &quot;4.交易失败，失败原因：*****\(String(describing: message))******&quot;)
+        SVProgressHUD.dismiss(withDelay: 3.0)
+        #endif
+        
+        if let reusltBlock = self.result&#123;
+            if message != nil &#123;
+                let parameter: [String:String] = [
+                                         &quot;state&quot;:&quot;failed&quot;,
+                    &quot;msg&quot;: message ?? &quot;&quot;,&quot;isShowAlert&quot;:isShowAlert,&quot;isShowDialog&quot;:isShowDialog]
+                reusltBlock(parameter)
+            &#125;else&#123;
+                let description = transaction.error?.localizedDescription
+                let parameter: [String:String] = [
+                                         &quot;state&quot;:&quot;failed&quot;,
+                                         &quot;msg&quot;: description ?? &quot;&quot;,&quot;isShowAlert&quot;:&quot;0&quot;,&quot;isShowDialog&quot;:&quot;1&quot;]
+                reusltBlock(parameter)
+            &#125;
+        &#125;
+        
+        SKPaymentQueue.default().finishTransaction(transaction)
+    &#125;
+</code></pre>
+<p>这里列出了所有的支付失败的状态，大部分状态不会遇到，遇到最多的是.unknown，这个错误真的是很折磨人，如果你接入支付不是参照官网文档，而是参看网上人们的博客，极有可能犯下一个错误，这会导致经常报这个错误，这个错误的详细信息是：</p>
+<pre><code>▿ Optional&lt;related decl &#39;e&#39; for SKErrorCode&gt;
+  ▿ some : related decl &#39;e&#39; for SKErrorCode
+    - _nsError : Error Domain=SKErrorDomain Code=0 &quot;发生未知错误&quot; UserInfo=&#123;NSLocalizedDescription=发生未知错误, NSUnderlyingError=0x281348d20 &#123;Error Domain=ASDErrorDomain Code=500 &quot;Unhandled exception&quot; UserInfo=&#123;NSUnderlyingError=0x281349e60 &#123;Error Domain=AMSErrorDomain Code=301 &quot;Invalid Status Code&quot; UserInfo=&#123;NSLocalizedDescription=Invalid Status Code, NSLocalizedFailureReason=The response has an invalid status code&#125;&#125;, NSLocalizedFailureReason=An unknown error occurred, NSLocalizedDescription=Unhandled exception&#125;&#125;&#125;
+</code></pre>
+<p>为了调查这个错误，我基本上看过了国内外所有的相关博客，绝大多数人都表示无能为力，并表示这可能不是我们代码导致的原因，是苹果的原因。</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_4.jpg"></p>
+<p>这里苹果爸爸也只是轻描淡写了一句：</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_5.png"></p>
+<p>但是看惯了苹果爸爸的demo，苹果爸爸的逻辑缜密到让人害怕，隐隐感觉还是自己代码的问题，随后向苹果发了邮件，询问了此事，苹果爸爸的回复让我豁然开朗。</p>
+<p>不卖关子了，这里主要错误原因是，在你支付实现过程中，不可以把想支付队列添加观察者这一步：</p>
+<pre><code>SKPaymentQueue.default().add(self)
+</code></pre>
+<p>放在你实现了StoreKit的ViewController中，原因是：这一步是个高流量占用的过程，如果在交易观察器正在查询应用商店服务器排队的交易时，用户发起了购买，这就导致了时间问题，支付就被干扰了，有可能会出现unknown的问题，线上用户埋点分析的话，大概也是有3%的概率出现这个问题。</p>
+<p>以下是苹果邮件原件：</p>
+<blockquote>
+<p>I’ve reviewed the problem description described below. There is one possibility - which is a guess on my part as you’ve not presented any programming details. The following is something to consider. Otherwise, I need specific details on how I can replicate the issue. One other thought is that the issue might involve a bad network connection.</p>
+<p>If the app makes the addPayment call and the result is a .failed transactionState with the localized error string as Error Domain=SKErrorDomain Code=0 “Cannot connect to iTunes Store” - the error is a generic error - something failed during the in-app purchase process. This is probably not a network connection failure.</p>
+<p>A possible reason for this error occurring in the sandbox environment is that the Test User account has become “corrupted”. The App Store does not clear yet user accounts - instead, they will advise that the user create a new test user account to test StoreKit apps with. Try testing in the sandbox with a new test user account.</p>
+<p>If this issue happens either in the sandbox (including App Review) or in the production environment, check to see whether the addTransactionObserver is being called from the StoreKit View Controller. The StoreKit documentation states that the addTransactionObserver call should be made at application launch time - preferably from the App Delegate - didFinishLaunchingWithOptions delegate method. If the addTransactionObserver call is made from the StoreKit ViewController, the call generates quite a bit of network traffic which can interfere with the addPayment processing which could be trigger by the user pressing the “Buy” button at the same time the transactionObserver is querying the App Store Server for queued transactions. This leads to a timing issue. The StoreKit app may work fine for several releases, then start returning this error for no apparent reason. If the issue happens in the production environment, use the following technique to get an idea as to whether this might be the cause.</p>
+<p>A quick way to check that the transactionObserver is being called properly - install the StoreKit profile. Then capture the Console log and begin the app. (Specific instructions for installing the profile and capturing the concole log are below) When the app settles down - that is the launch screen has disappeared, and the app is at the point where in-app purchase content should be available, search the console contents for the string “inAppCheckDownloadQueue”. The string “inAppCheckDownloadQueue” should appear early in the log. To determine when the app launches, search for the string “”launch request”</p>
+<p>The following is an example -</p>
+<p>default    12:54:35.080163-0800    runningboardd    Executing launch request for application&lt;com.developer.app&gt; (FBApplicationProcess)</p>
+<p>Next search for the string “inAppCheckDownloadQueue”. The timestamp for the log statement with the string “inAppCheckDownloadQueue” - should appear shortly after the launch of the app (1 - 2 seconds). Your app may defer calling addTransactionObserver until later. What you shoud not find is the case in making a purchase, that the log statement with the string “inAppCheckDownloadQueue” appears close in time to the log statement which includes the string “inAppBuy”. Such a finding indicates that the addTransactionObserver method was called close to the user pressing the “Buy” button.</p>
+<p>Here’s the specific instructions to install the StoreKit profile and to caprture the console log.</p>
+<p>Install StoreKit profile to an iOS 11+ device<br>Please login to the Apple Developer Bug Report - Profiles and Logs website<br><a target="_blank" rel="noopener" href="https://developer.apple.com/bug-reporting/profiles-and-logs/">https://developer.apple.com/bug-reporting/profiles-and-logs/</a>; using Safari on the device you will use to replicate the problem with.<br>Click the “Profile” URL associated with the “App Store/iTunes Store for iOS” item. You will download the “itmsdebugging.mobileconfig” file.<br>For iOS 12.2 or later, you will open the Settings app -&gt; General -&gt; Profiles &amp; Device Management -&gt; iTunes and App Stores Diagnostic logging -&gt; press Install<br>For devices with less than iOS 12.2,  - PLEASE RESTART THE DEVICE</p>
+<p>Review the following article on testing StoreKit apps<br><a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchase_transactions">https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchase_transactions</a>;</p>
+<p>CAPTURE THE DEVICE CONSOLE LOG - connect the device to a macOS X Sierra system (macOS X 10.12.x or newer)</p>
+<ol>
+<li>Launch the Console app on the macOS system, and select the device in the left side of the Console window</li>
+<li>Before starting the iOS app, click “Clear”.</li>
+<li>Start the application and let the app settle down. Make sure to use the appropriate version of the app - sandbox or production.</li>
+</ol>
+<p>Check the contents of the console log for the string “inAppCheckDownloadQueue”. This string should be present shortly after the app is launched. If the call is not present, a suspicion is that the addTransactionObserver call is being made when the StoreKit ViewController is being presented - which could lead to the occasion occurrence of the issue where a purchase attempt results in “Error Domain=SKErrorDomain Code=0 “Cannot connect to iTunes Store”.</p>
+<p>It might be that this is an actual bug report issue to be investigated by the App Store Server Engineering group. The following are the instructions for submitting the bug report.</p>
+<p>To submit a bug report, please use the Apple Developer Feedback web page -</p>
+<p><a target="_blank" rel="noopener" href="https://feedbackassistant.apple.com/">https://feedbackassistant.apple.com/</a>;.</p>
+<p>Enter the “Feedback Assistant” page and login<br>Click on the Compose icon to start a new bug report</p>
+<p>Start by clicking on the appropriate OS button - “iOS and iPadOS”, “tvOS”, or “macOS”</p>
+<ol>
+<li><p>In the “Descriptive Title” field, enter an appropriate description.</p>
 </li>
-<li><p>重复购买vip：storekit文档明确指出“如果用户试图购买他们已经购买的非消费产品或可更新订阅，您的应用程序将收到该项目的常规交易，而不是恢复交易 . 但是，该产品不会再次向用户收取费用你的申请应该将这些交易视为与原始交易的交易相同“ . 就我而言，当我再次购买时，我一直将交易状态变为“失败” .</p>
+<li><p>In the “Problem Area” field select “StoreKit”</p>
 </li>
-<li><p>iTunes Store问题：<a href="">https://downdetector.com/status/itunes/</a></p>
+<li><p>In the “Type of Feedback” select “Incorrect / Unexpected Behavior”</p>
 </li>
+<li><p>In the “Describe the Issue” section enter the following</p>
+<ul>
+<li>application ID (and In-App Purchase identifiers if appropriate)</li>
+<li>sandbox or production environment</li>
+<li>the instructions for finding the “Buy” button to purchase the In-App Purchase item.<br>(if the app is not in English, please provide screenshots)</li>
+<li>the problem description in detail.</li>
 </ul>
-<h3 id="2-SKError-unknown："><a href="#2-SKError-unknown：" class="headerlink" title="2.SKError.unknown："></a>2.SKError.unknown：</h3><h5 id="StackOverFlow文章"><a href="#StackOverFlow文章" class="headerlink" title="StackOverFlow文章:"></a>StackOverFlow文章:</h5><p>原文链接：<a href="">https://stackoverflow.com/questions/19457618/received-skpaymenttransactionstatefailed-but-itune-processed-payment</a></p>
-<h5 id="CSDN文章："><a href="#CSDN文章：" class="headerlink" title="CSDN文章："></a>CSDN文章：</h5><blockquote>
-<p>这个SKErrorUnknown实在是很难处理，我找了好多的帖子，包括stackoverflow，也没看到太多的说法，有一些说可能是越狱手机，才会出现这种状态，在测试的时候，我们通常也会遇到这种问题。测试的时候，我们要再iTunes connect申请测试账号，有的时候，测试账号出问题，或者，测试账号已经被取消了，不再使用了，而支付的时候，仍然在使用这个测试账号，这个时候，也会出现unknown状态。</p>
+</li>
+<li><p>If you have captured a console log - drop it onto the “Drop Files to upload”.</p>
+</li>
+</ol>
+<p>Save the Feedback number and send it to me - FBxxxxxxxxxx.</p>
+<p>Sincerely Yours,</p>
 </blockquote>
-<p>原文链接：<a href="">https://blog.csdn.net/u013152587/article/details/50488353</a></p>
-<h5 id="苹果官网文档："><a href="#苹果官网文档：" class="headerlink" title="苹果官网文档："></a>苹果官网文档：</h5><blockquote>
-<p>For more information about the underlying cause of the error, see the localizedDescription property of the error object.</p>
-<p> When this error occurs during testing, it can often be resolved by logging out of iTunes and/or the App Store and creating a new test user account in App Store Connect. This approach only works when running the app on a device, not the simulator.</p>
-<p>When this error occurs in production, it may indicate a problem with the user’s iTunes account.</p>
-</blockquote>
-<p>苹果原文：<a href="">https://developer.apple.com/documentation/storekit/skerrorcode/skerrorunknown#discussion</a></p>
+<p>苹果虽然未看代码，但是估计这是个通用问题，指出了问题所在，并且国内大多数的论坛博客，操作方式还是将设置监听器放在ViewController中，所以假如不是按照苹果官网文档接入的话，漏掉这个细节的话，那么只能认命了，绝大多数朋友表示不知道怎么处理这个问题，以至于直接忽略问题。</p>
+<p>所以正确的做法是把设置监听器放置在didFinishLaunching中。如果你有兴趣可以尝试苹果邮件推荐的capture the Console log and begin the app步骤，这是一个更精确的可以复现问题和解决问题的方法。</p>
+<p>以上是所有遇到的支付问题总结，希望可以帮到你，谢谢。</p>
 
     
 
@@ -458,7 +695,7 @@
                 </span>
                 <span class="tooltip-content">
                     <div class="toc-article">
-                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E8%B4%AD%E5%A4%B1%E8%B4%A5%E7%9A%84%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90%E4%B8%8E%E5%8E%9F%E5%9B%A0%E6%80%BB%E7%BB%93%EF%BC%9A"><span class="toc-number">1.</span> <span class="toc-text">内购失败的问题分析与原因总结：</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%97%A0%E6%B3%95%E8%BF%9E%E6%8E%A5%E5%88%B0-iTunes-Store%EF%BC%9A"><span class="toc-number">1.1.</span> <span class="toc-text">1.无法连接到 iTunes Store：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-SKError-unknown%EF%BC%9A"><span class="toc-number">1.2.</span> <span class="toc-text">2.SKError.unknown：</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#StackOverFlow%E6%96%87%E7%AB%A0"><span class="toc-number">1.2.0.1.</span> <span class="toc-text">StackOverFlow文章:</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#CSDN%E6%96%87%E7%AB%A0%EF%BC%9A"><span class="toc-number">1.2.0.2.</span> <span class="toc-text">CSDN文章：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%8B%B9%E6%9E%9C%E5%AE%98%E7%BD%91%E6%96%87%E6%A1%A3%EF%BC%9A"><span class="toc-number">1.2.0.3.</span> <span class="toc-text">苹果官网文档：</span></a></li></ol></li></ol></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E6%8E%A5%E5%85%A5%E5%86%85%E8%B4%AD%E6%97%B6%E7%9A%84%E5%90%8E%E7%AB%AF%E7%A5%A8%E6%8D%AE%E9%AA%8C%E8%AF%81%EF%BC%9A"><span class="toc-number">1.</span> <span class="toc-text">1.接入内购时的后端票据验证：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E6%8E%A5%E5%85%A5%E5%86%85%E8%B4%AD%E6%97%B6%E6%98%AF%E5%90%A6%E5%8C%85%E5%90%AB%E8%87%AA%E5%8A%A8%E7%BB%AD%E8%AE%A2%E7%B1%BB%E4%BA%A7%E5%93%81%EF%BC%9A"><span class="toc-number">2.</span> <span class="toc-text">2.接入内购时是否包含自动续订类产品：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-%E5%86%85%E8%B4%AD%E7%9A%84%E6%8A%A5%E9%94%99%E5%8E%9F%E5%9B%A0%E6%9C%80%E5%A5%BD%E8%AF%A6%E7%BB%86%E5%B1%95%E5%BC%80%E6%9C%89%E5%8A%A9%E4%BA%8E%E5%88%86%E6%9E%90%EF%BC%9A"><span class="toc-number">3.</span> <span class="toc-text">3.内购的报错原因最好详细展开有助于分析：</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#productId%E6%98%AF%E5%90%A6%E5%90%88%E6%B3%95"><span class="toc-number">3.1.</span> <span class="toc-text">productId是否合法</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%A3%80%E6%9F%A5%E8%AE%BE%E5%A4%87%E6%98%AF%E5%90%A6%E5%85%81%E8%AE%B8%E6%94%AF%E4%BB%98"><span class="toc-number">3.2.</span> <span class="toc-text">检查设备是否允许支付</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%8F%91%E8%B5%B7%E5%86%85%E8%B4%AD%E8%AF%B7%E6%B1%82%E5%A4%B1%E8%B4%A5"><span class="toc-number">3.3.</span> <span class="toc-text">发起内购请求失败</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%A4%E6%96%ADfunc-productsRequest-request-SKProductsRequest-didReceive-response-SKProductsResponse-%E4%B8%AD%E8%BF%94%E5%9B%9E%E7%9A%84%E7%9A%84%E5%95%86%E5%93%81id%E6%98%AF%E5%90%A6%E5%92%8C%E5%8F%91%E8%B5%B7%E5%86%85%E8%B4%AD%E5%95%86%E5%93%81id%E4%B8%80%E8%87%B4"><span class="toc-number">3.4.</span> <span class="toc-text">判断func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse)中返回的的商品id是否和发起内购商品id一致</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%A4%84%E7%90%86transactionState%E4%B8%BA-failed%E7%9A%84%E4%BA%A4%E6%98%93%EF%BC%9A"><span class="toc-number">3.5.</span> <span class="toc-text">处理transactionState为.failed的交易：</span></a></li></ol></li></ol>
                     </div>
                 </span>
             </div>
@@ -649,19 +886,23 @@
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">内购</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">错误</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
               </li>
             
             <div class="clearfix"></div>

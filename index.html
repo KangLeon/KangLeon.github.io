@@ -923,29 +923,51 @@ return Disposables.create &#123; task.cancel() &#125;
 <h3 id="Single"><a href="#Single" class="headerlink" title="Single"></a>Single</h3><p>Single 是 Observable 的另外一个版本。不像 Observable 可以发出多个元素，它要么只能发出一个元素，要么产生一个 error 事件。</p>
 <p>发出一个元素，或一个 error 事件<br>不会共享附加作用<br>一个比较常见的例子就是执行 HTTP 请求，然后返回一个应答或错误。不过你也可以用 Single 来描述任何只有一个元素的序列。</p>
 <h4 id="如何创建-Single"><a href="#如何创建-Single" class="headerlink" title="如何创建 Single?"></a>如何创建 Single?</h4><p>创建 Single 和创建 Observable 非常相似：</p>
-<p>func getRepo(_ repo: String) -&gt; Single&lt;[String: Any]&gt; {</p>
-<pre><code>return Single&lt;[String: Any]&gt;.create &#123; single in
-</code></pre>
-<p> let url = URL(string: “<a target="_blank" rel="noopener" href="https://api.github.com/repos//(repo)&quot;">https://api.github.com/repos/\(repo)&quot;</a>)!<br>        let task = URLSession.shared.dataTask(with: url) {<br>            data, _, error in</p>
-<pre><code>        if let error = error &#123;
+<pre><code>    func getRepo(_ repo: String) -&gt; Single&lt;[String: Any]&gt; &#123;
+    
+    return Single&lt;[String: Any]&gt;.create &#123; single in
+    
+    let url = URL(string: &quot;https://api.github.com/repos/\(repo)&quot;)!
+        let task = URLSession.shared.dataTask(with: url) &#123;
+            data, _, error in
+    
+        if let error = error &#123;
             single(.error(error))
             return
         &#125;
-
+    
         guard let data = data,
               let json = try? JSONSerialization.jsonObject(with: data, options: .mutableLeaves),
               let result = json as? [String: Any] else &#123;
             single(.error(DataError.cantParseJSON))
             return
         &#125;
-</code></pre>
-<p>single(.success(result))<br>        }</p>
-<pre><code>    task.resume()
-
+    
+        single(.success(result))
+    &#125;
+    
+    task.resume()
+    
     return Disposables.create &#123; task.cancel() &#125;
 &#125;
+&#125;
 </code></pre>
-<p>}</p>
+<p>之后，你可以这样使用 Single：</p>
+<pre><code>getRepo(&quot;ReactiveX/RxSwift&quot;)
+    .subscribe(onSuccess: &#123; json in
+        print(&quot;JSON: &quot;, json)
+    &#125;, onError: &#123; error in
+        print(&quot;Error: &quot;, error)
+    &#125;)
+    .disposed(by: disposeBag)
+</code></pre>
+<p>订阅提供一个 SingleEvent 的枚举：</p>
+<p>public enum SingleEvent<Element> {<br>    case success(Element)<br>    case error(Swift.Error)<br>}</p>
+<ul>
+<li>success - 产生一个单独的元素</li>
+<li>error - 产生一个错误</li>
+</ul>
+<p>你同样可以对 Observable 调用 .asSingle() 方法，将它转换为 Single。</p>
 
     
 
@@ -1208,25 +1230,256 @@ if val &gt; max &#123;
   
   <div class="article-entry" itemprop="articleBody">
     
-    <h2 id="内购失败的问题分析与原因总结："><a href="#内购失败的问题分析与原因总结：" class="headerlink" title="内购失败的问题分析与原因总结："></a>内购失败的问题分析与原因总结：</h2><h3 id="1-无法连接到-iTunes-Store："><a href="#1-无法连接到-iTunes-Store：" class="headerlink" title="1.无法连接到 iTunes Store："></a>1.无法连接到 iTunes Store：</h3><ul>
-<li><p>DNS问题：进入 WiFi，找到「配置 DNS」，设置为「手动」，在最顶部添加「114.114.114.114」或「8.8.8.8」；</p>
+    <p>提要：本篇主要涉及到内购中的疑难杂证，不是基础内购接入流程</p>
+<p>最近公司上线了一款社交类应用，这是一款采用了flutter技术开发的应用，对于该项目还是很满意的，收入在同行算中等，重要的是对于flutter技术的掌握也更近一步，话不多说回归正题。</p>
+<p>App想要变现的话一定就要接入内购，在此之中遇到了一些问题，以下是遇到问题的汇总与分析：</p>
+<h4 id="1-接入内购时的后端票据验证："><a href="#1-接入内购时的后端票据验证：" class="headerlink" title="1.接入内购时的后端票据验证："></a>1.接入内购时的后端票据验证：</h4><p><strong>票据验证涉及到两个接口：</strong></p>
+<p><a target="_blank" rel="noopener" href="https://sandbox.itunes.apple.com/verifyReceipt%EF%BC%88%E6%B2%99%E7%9B%92%EF%BC%89">https://sandbox.itunes.apple.com/verifyReceipt（沙盒）</a><br><a target="_blank" rel="noopener" href="https://buy.itunes.apple.com/verifyReceipt%EF%BC%88%E6%AD%A3%E5%BC%8F%EF%BC%89">https://buy.itunes.apple.com/verifyReceipt（正式）</a></p>
+<p><strong>这里有个坑是</strong>：当App审核的时候，实际上苹果审核人员使用的是沙盒支付环境，所以后端应该在这里做一下处理，有三种处理方式：1.当你的环境切为正式环境提交审核时，假如验证票据是21007，那么后端应该补调一下沙盒的验证接口；2.或者就是加一个审核态的标识，如果审核态时，使用沙盒的接口；3.后端实际上不用前端传任何东西，拿到票据时，自己判断是沙盒还是生产环境（我们采用此种做法）</p>
+<p>（有很多开发者因为在审核态时，用生产接口验证票据被拒）</p>
+<p><strong>以下是票据验证的报错以及原因</strong>：</p>
+<p>21000 App Store无法读取你提供的JSON数据<br>21002 收据数据不符合格式<br>21003 收据无法被验证<br>21004 你提供的共享密钥和账户的共享密钥不一致<br>21005 收据服务器当前不可用<br>21006 收据是有效的，但订阅服务已经过期。当收到这个信息时，解码后的收据信息也包含在返回内容中<br>21007 收据信息是测试用（sandbox），但却被发送到产品环境中验证<br>21008 收据信息是产品环境中使用，但却被发送到测试环境中验证 </p>
+<p>还有个坑是：对于订阅类的产品，验证票据需要加password字段，这个是你App Store Connect上面创建的共享密钥，把这个密钥给后端就好</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_1.jpg"></p>
+<h4 id="2-接入内购时是否包含自动续订类产品："><a href="#2-接入内购时是否包含自动续订类产品：" class="headerlink" title="2.接入内购时是否包含自动续订类产品："></a>2.接入内购时是否包含自动续订类产品：</h4><p>如果包含自动续订类的产品，那么一定切记要在订阅产品购买页加上会员服务协议，苹果要求这个协议必须要有，同时你还应该在协议里描述清楚你的续订类产品的详细信息以及续订规则，取消规则，请为用户负责。</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_2.jpeg"></p>
+<p>如果可能，最好把会员服务协议链接和续订类产品的详细信息以及续订规则，取消规则写在商店宣传文案下面。</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_3.jpeg"></p>
+<p>（有很多开发者因为没有任何协议导致被拒）</p>
+<h4 id="3-内购的报错原因最好详细展开有助于分析："><a href="#3-内购的报错原因最好详细展开有助于分析：" class="headerlink" title="3.内购的报错原因最好详细展开有助于分析："></a>3.内购的报错原因最好详细展开有助于分析：</h4><p>我们的内购流程有详细的埋点跟踪用户操作的流程以及失败原因，统计失败错误可以定位并分析到对应的错误原因。</p>
+<p>但是支付失败可能产生于不同的地方，以及我们应该在何处进行边界判断：</p>
+<h5 id="productId是否合法"><a href="#productId是否合法" class="headerlink" title="productId是否合法"></a>productId是否合法</h5><pre><code>//校验productID是否合法
+                guard (self.currentProductId != nil &amp;&amp; self.currentProductId!.count &gt; 0) else &#123;
+                    #if DEBUG
+                    SVProgressHUD.showInfo(withStatus: &quot;1.1 商品id不合法&quot;)
+                    SVProgressHUD.dismiss(withDelay: 3.0)
+                    #endif
+                    
+                    return
+                &#125;
+                
+                //开始支付流程
+                startCharge()
+</code></pre>
+<p>绝大多数不会因为这个原因导致支付失败，因为我们一般按照正常逻辑接入支付，支付数据一般也是正常的，而且假如发起了<em>SKProductsRequest</em>后，没有找到该productId，也会提示未找到商品：</p>
+<pre><code>...
+
+func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) &#123;
+
+productList = response.products
+        
+        var curProduct :SKProduct?
+         if let tem_productList = productList &#123;
+            if tem_productList.count==0 &#123;
+                //如果商品列表为空，那么提示用户没有找到商品
+                if let reusltBlock = self.result&#123;
+                    let parameter: [String:String] = [
+                                             &quot;state&quot;:&quot;failed&quot;,
+                                             &quot;msg&quot;:&quot;The product was not                             found&quot;,&quot;isShowAlert&quot;:&quot;1&quot;,&quot;isShowDialog&quot;:&quot;0&quot;]
+                    reusltBlock(parameter)
+                    
+                    return
+                &#125;
+            &#125;
+...
+&#125;
+</code></pre>
+<p>但是假如你没有头绪时，不妨检查下productId是否合法。</p>
+<h5 id="检查设备是否允许支付"><a href="#检查设备是否允许支付" class="headerlink" title="检查设备是否允许支付"></a>检查设备是否允许支付</h5><pre><code>if SKPaymentQueue.canMakePayments() &#123;
+            //user允许支付
+            if let proId = currentProductId &#123;
+                let requestSet = Set.init([proId])
+                payRequest = SKProductsRequest.init(productIdentifiers: requestSet)
+                //设置支付请求代理
+                payRequest?.delegate=self
+                payRequest?.start()
+            &#125;
+        &#125;else&#123;
+            //user不允许支付
+            if let reusltBlock = self.result&#123;
+                let parameter: [String:String] = [
+                                         &quot;state&quot;:&quot;failed&quot;,
+                                         &quot;msg&quot;:&quot;The user is not allowed to make payments.&quot;,
+                                         &quot;isShowAlert&quot;:&quot;1&quot;,&quot;isShowDialog&quot;:&quot;0&quot;]
+                reusltBlock(parameter)
+            &#125;
+        &#125;
+</code></pre>
+<p>这种情况的原因是手机关闭了应用内支付，或者没有绑定支付手段，还有其他…</p>
+<p>分析了线上用户的埋点数据，这种报错不多，但是也有一些，如果是这种错误的话，请展示给用户无法进行支付的提示。</p>
+<h5 id="发起内购请求失败"><a href="#发起内购请求失败" class="headerlink" title="发起内购请求失败"></a>发起内购请求失败</h5><pre><code>//发起内购请求失败
+    func request(_ request: SKRequest, didFailWithError error: Error) &#123;
+        print(&quot;发起内购失败，失败原因：\(error.localizedDescription)&quot;)
+        
+        let tem_error = error as NSError
+        
+        #if DEBUG
+        SVProgressHUD.showInfo(withStatus: &quot;2.发起内购失败，失败Domain：\(tem_error.domain),失败code: \(tem_error.code),失败描述：\(tem_error.localizedDescription),失败信息: \(tem_error.userInfo)&quot;)
+        SVProgressHUD.dismiss(withDelay: 3.0)
+        #endif
+        
+        if let reusltBlock = self.result&#123;
+            let parameter: [String:String] = [
+                                     &quot;state&quot;:&quot;failed&quot;,
+                                     &quot;msg&quot;:&quot;2.发起内购失败，失败Domain：\(tem_error.domain),失败code: \(tem_error.code),失败描述：\(tem_error.localizedDescription),失败信息: \(tem_error.userInfo)&quot;,&quot;isShowAlert&quot;:&quot;1&quot;,&quot;isShowDialog&quot;:&quot;1&quot;]
+
+            reusltBlock(parameter)
+        &#125;
+    &#125;
+</code></pre>
+<p>这种是属于NSURLErrorDomain的错误，这种情况属于payRequest?.start()失败，大部分可以归结为网络原因，网络环境不正常，这种情况下也只可以让用户稍后重试。</p>
+<h5 id="判断func-productsRequest-request-SKProductsRequest-didReceive-response-SKProductsResponse-中返回的的商品id是否和发起内购商品id一致"><a href="#判断func-productsRequest-request-SKProductsRequest-didReceive-response-SKProductsResponse-中返回的的商品id是否和发起内购商品id一致" class="headerlink" title="判断func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse)中返回的的商品id是否和发起内购商品id一致"></a>判断func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse)中返回的的商品id是否和发起内购商品id一致</h5><p>这一步其实不是很必要，但是喜马拉雅App的代码里面有这一步判断，有可能也是有意外情况。</p>
+<h5 id="处理transactionState为-failed的交易："><a href="#处理transactionState为-failed的交易：" class="headerlink" title="处理transactionState为.failed的交易："></a>处理transactionState为.failed的交易：</h5><pre><code>//交易失败
+    func failedTransaction(transaction: SKPaymentTransaction) &#123;
+
+        let error = transaction.error as? SKError
+        
+        var message :String?
+        var isShowAlert = &quot;0&quot;//是否显示toast
+        var isShowDialog = &quot;1&quot;//是否显示Dialog
+        
+        if let code = error?.code &#123;
+            switch code &#123;
+            case .unknown:
+                message = &quot;未知错误&quot;
+            case .clientInvalid:
+                message = &quot;Client is not allowed to issue the request, etc&quot;
+            case .paymentCancelled:
+                //取消
+                message = &quot;User cancelled the request, etc&quot;
+                isShowAlert = &quot;1&quot;
+                isShowDialog = &quot;0&quot;
+            case .paymentInvalid:
+                message = &quot;Purchase identifier was invalid, etc&quot;
+            case .paymentNotAllowed:
+                //设备不支持支付
+                message = &quot;This device is not allowed to make the payment&quot;
+                isShowAlert = &quot;1&quot;
+                isShowDialog = &quot;0&quot;
+            case .storeProductNotAvailable:
+                message = &quot;Product is not available in the current storefront&quot;
+            case .cloudServicePermissionDenied:
+                message = &quot;User has not allowed access to cloud service information&quot;
+            case .cloudServiceNetworkConnectionFailed:
+                message = &quot;The device could not connect to the nework&quot;
+            case .cloudServiceRevoked:
+                message = &quot;User has revoked permission to use this cloud service&quot;
+            case .privacyAcknowledgementRequired:
+                message = &quot;The user needs to acknowledge Apple&#39;s privacy policy&quot;
+            case .unauthorizedRequestData:
+                message = &quot;The app is attempting to use SKPayment&#39;s requestData property, but does not have the appropriate entitlement&quot;
+            case .invalidOfferIdentifier:
+                message = &quot;The specified subscription offer identifier is not valid&quot;
+            case .invalidSignature:
+                message = &quot;The cryptographic signature provided is not valid&quot;
+            case .missingOfferParams:
+                message = &quot;One or more parameters from SKPaymentDiscount is missing&quot;
+            case .invalidOfferPrice:
+                message = &quot;The price of the selected offer is not valid (e.g. lower than the current base subscription price)&quot;
+            case .overlayCancelled:
+                message = &quot;OverlayCancelled&quot;
+            case .overlayInvalidConfiguration:
+                message = &quot;OverlayInvalidConfiguration&quot;
+            case .overlayTimeout:
+                message = &quot;OverlayTimeout&quot;
+            case .ineligibleForOffer:
+                message = &quot;User is not eligible for the subscription offer&quot;
+            case .unsupportedPlatform:
+                //平台不支持支付
+                message = &quot;UnsupportedPlatform&quot;
+                isShowAlert = &quot;1&quot;
+                isShowDialog = &quot;0&quot;
+            default: 
+                message = &quot;Default&quot;
+            &#125;
+        &#125;
+        
+        #if DEBUG
+        SVProgressHUD.showInfo(withStatus: &quot;4.交易失败，失败原因：*****\(String(describing: message))******&quot;)
+        SVProgressHUD.dismiss(withDelay: 3.0)
+        #endif
+        
+        if let reusltBlock = self.result&#123;
+            if message != nil &#123;
+                let parameter: [String:String] = [
+                                         &quot;state&quot;:&quot;failed&quot;,
+                    &quot;msg&quot;: message ?? &quot;&quot;,&quot;isShowAlert&quot;:isShowAlert,&quot;isShowDialog&quot;:isShowDialog]
+                reusltBlock(parameter)
+            &#125;else&#123;
+                let description = transaction.error?.localizedDescription
+                let parameter: [String:String] = [
+                                         &quot;state&quot;:&quot;failed&quot;,
+                                         &quot;msg&quot;: description ?? &quot;&quot;,&quot;isShowAlert&quot;:&quot;0&quot;,&quot;isShowDialog&quot;:&quot;1&quot;]
+                reusltBlock(parameter)
+            &#125;
+        &#125;
+        
+        SKPaymentQueue.default().finishTransaction(transaction)
+    &#125;
+</code></pre>
+<p>这里列出了所有的支付失败的状态，大部分状态不会遇到，遇到最多的是.unknown，这个错误真的是很折磨人，如果你接入支付不是参照官网文档，而是参看网上人们的博客，极有可能犯下一个错误，这会导致经常报这个错误，这个错误的详细信息是：</p>
+<pre><code>▿ Optional&lt;related decl &#39;e&#39; for SKErrorCode&gt;
+  ▿ some : related decl &#39;e&#39; for SKErrorCode
+    - _nsError : Error Domain=SKErrorDomain Code=0 &quot;发生未知错误&quot; UserInfo=&#123;NSLocalizedDescription=发生未知错误, NSUnderlyingError=0x281348d20 &#123;Error Domain=ASDErrorDomain Code=500 &quot;Unhandled exception&quot; UserInfo=&#123;NSUnderlyingError=0x281349e60 &#123;Error Domain=AMSErrorDomain Code=301 &quot;Invalid Status Code&quot; UserInfo=&#123;NSLocalizedDescription=Invalid Status Code, NSLocalizedFailureReason=The response has an invalid status code&#125;&#125;, NSLocalizedFailureReason=An unknown error occurred, NSLocalizedDescription=Unhandled exception&#125;&#125;&#125;
+</code></pre>
+<p>为了调查这个错误，我基本上看过了国内外所有的相关博客，绝大多数人都表示无能为力，并表示这可能不是我们代码导致的原因，是苹果的原因。</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_4.jpg"></p>
+<p>这里苹果爸爸也只是轻描淡写了一句：</p>
+<p><img src="/uploads/images/%E5%86%85%E8%B4%AD/img_5.png"></p>
+<p>但是看惯了苹果爸爸的demo，苹果爸爸的逻辑缜密到让人害怕，隐隐感觉还是自己代码的问题，随后向苹果发了邮件，询问了此事，苹果爸爸的回复让我豁然开朗。</p>
+<p>不卖关子了，这里主要错误原因是，在你支付实现过程中，不可以把想支付队列添加观察者这一步：</p>
+<pre><code>SKPaymentQueue.default().add(self)
+</code></pre>
+<p>放在你实现了StoreKit的ViewController中，原因是：这一步是个高流量占用的过程，如果在交易观察器正在查询应用商店服务器排队的交易时，用户发起了购买，这就导致了时间问题，支付就被干扰了，有可能会出现unknown的问题，线上用户埋点分析的话，大概也是有3%的概率出现这个问题。</p>
+<p>以下是苹果邮件原件：</p>
+<blockquote>
+<p>I’ve reviewed the problem description described below. There is one possibility - which is a guess on my part as you’ve not presented any programming details. The following is something to consider. Otherwise, I need specific details on how I can replicate the issue. One other thought is that the issue might involve a bad network connection.</p>
+<p>If the app makes the addPayment call and the result is a .failed transactionState with the localized error string as Error Domain=SKErrorDomain Code=0 “Cannot connect to iTunes Store” - the error is a generic error - something failed during the in-app purchase process. This is probably not a network connection failure.</p>
+<p>A possible reason for this error occurring in the sandbox environment is that the Test User account has become “corrupted”. The App Store does not clear yet user accounts - instead, they will advise that the user create a new test user account to test StoreKit apps with. Try testing in the sandbox with a new test user account.</p>
+<p>If this issue happens either in the sandbox (including App Review) or in the production environment, check to see whether the addTransactionObserver is being called from the StoreKit View Controller. The StoreKit documentation states that the addTransactionObserver call should be made at application launch time - preferably from the App Delegate - didFinishLaunchingWithOptions delegate method. If the addTransactionObserver call is made from the StoreKit ViewController, the call generates quite a bit of network traffic which can interfere with the addPayment processing which could be trigger by the user pressing the “Buy” button at the same time the transactionObserver is querying the App Store Server for queued transactions. This leads to a timing issue. The StoreKit app may work fine for several releases, then start returning this error for no apparent reason. If the issue happens in the production environment, use the following technique to get an idea as to whether this might be the cause.</p>
+<p>A quick way to check that the transactionObserver is being called properly - install the StoreKit profile. Then capture the Console log and begin the app. (Specific instructions for installing the profile and capturing the concole log are below) When the app settles down - that is the launch screen has disappeared, and the app is at the point where in-app purchase content should be available, search the console contents for the string “inAppCheckDownloadQueue”. The string “inAppCheckDownloadQueue” should appear early in the log. To determine when the app launches, search for the string “”launch request”</p>
+<p>The following is an example -</p>
+<p>default    12:54:35.080163-0800    runningboardd    Executing launch request for application&lt;com.developer.app&gt; (FBApplicationProcess)</p>
+<p>Next search for the string “inAppCheckDownloadQueue”. The timestamp for the log statement with the string “inAppCheckDownloadQueue” - should appear shortly after the launch of the app (1 - 2 seconds). Your app may defer calling addTransactionObserver until later. What you shoud not find is the case in making a purchase, that the log statement with the string “inAppCheckDownloadQueue” appears close in time to the log statement which includes the string “inAppBuy”. Such a finding indicates that the addTransactionObserver method was called close to the user pressing the “Buy” button.</p>
+<p>Here’s the specific instructions to install the StoreKit profile and to caprture the console log.</p>
+<p>Install StoreKit profile to an iOS 11+ device<br>Please login to the Apple Developer Bug Report - Profiles and Logs website<br><a target="_blank" rel="noopener" href="https://developer.apple.com/bug-reporting/profiles-and-logs/">https://developer.apple.com/bug-reporting/profiles-and-logs/</a>; using Safari on the device you will use to replicate the problem with.<br>Click the “Profile” URL associated with the “App Store/iTunes Store for iOS” item. You will download the “itmsdebugging.mobileconfig” file.<br>For iOS 12.2 or later, you will open the Settings app -&gt; General -&gt; Profiles &amp; Device Management -&gt; iTunes and App Stores Diagnostic logging -&gt; press Install<br>For devices with less than iOS 12.2,  - PLEASE RESTART THE DEVICE</p>
+<p>Review the following article on testing StoreKit apps<br><a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchase_transactions">https://developer.apple.com/documentation/storekit/in-app_purchase/testing_in-app_purchase_transactions</a>;</p>
+<p>CAPTURE THE DEVICE CONSOLE LOG - connect the device to a macOS X Sierra system (macOS X 10.12.x or newer)</p>
+<ol>
+<li>Launch the Console app on the macOS system, and select the device in the left side of the Console window</li>
+<li>Before starting the iOS app, click “Clear”.</li>
+<li>Start the application and let the app settle down. Make sure to use the appropriate version of the app - sandbox or production.</li>
+</ol>
+<p>Check the contents of the console log for the string “inAppCheckDownloadQueue”. This string should be present shortly after the app is launched. If the call is not present, a suspicion is that the addTransactionObserver call is being made when the StoreKit ViewController is being presented - which could lead to the occasion occurrence of the issue where a purchase attempt results in “Error Domain=SKErrorDomain Code=0 “Cannot connect to iTunes Store”.</p>
+<p>It might be that this is an actual bug report issue to be investigated by the App Store Server Engineering group. The following are the instructions for submitting the bug report.</p>
+<p>To submit a bug report, please use the Apple Developer Feedback web page -</p>
+<p><a target="_blank" rel="noopener" href="https://feedbackassistant.apple.com/">https://feedbackassistant.apple.com/</a>;.</p>
+<p>Enter the “Feedback Assistant” page and login<br>Click on the Compose icon to start a new bug report</p>
+<p>Start by clicking on the appropriate OS button - “iOS and iPadOS”, “tvOS”, or “macOS”</p>
+<ol>
+<li><p>In the “Descriptive Title” field, enter an appropriate description.</p>
 </li>
-<li><p>重复购买vip：storekit文档明确指出“如果用户试图购买他们已经购买的非消费产品或可更新订阅，您的应用程序将收到该项目的常规交易，而不是恢复交易 . 但是，该产品不会再次向用户收取费用你的申请应该将这些交易视为与原始交易的交易相同“ . 就我而言，当我再次购买时，我一直将交易状态变为“失败” .</p>
+<li><p>In the “Problem Area” field select “StoreKit”</p>
 </li>
-<li><p>iTunes Store问题：<a href="">https://downdetector.com/status/itunes/</a></p>
+<li><p>In the “Type of Feedback” select “Incorrect / Unexpected Behavior”</p>
 </li>
+<li><p>In the “Describe the Issue” section enter the following</p>
+<ul>
+<li>application ID (and In-App Purchase identifiers if appropriate)</li>
+<li>sandbox or production environment</li>
+<li>the instructions for finding the “Buy” button to purchase the In-App Purchase item.<br>(if the app is not in English, please provide screenshots)</li>
+<li>the problem description in detail.</li>
 </ul>
-<h3 id="2-SKError-unknown："><a href="#2-SKError-unknown：" class="headerlink" title="2.SKError.unknown："></a>2.SKError.unknown：</h3><h5 id="StackOverFlow文章"><a href="#StackOverFlow文章" class="headerlink" title="StackOverFlow文章:"></a>StackOverFlow文章:</h5><p>原文链接：<a href="">https://stackoverflow.com/questions/19457618/received-skpaymenttransactionstatefailed-but-itune-processed-payment</a></p>
-<h5 id="CSDN文章："><a href="#CSDN文章：" class="headerlink" title="CSDN文章："></a>CSDN文章：</h5><blockquote>
-<p>这个SKErrorUnknown实在是很难处理，我找了好多的帖子，包括stackoverflow，也没看到太多的说法，有一些说可能是越狱手机，才会出现这种状态，在测试的时候，我们通常也会遇到这种问题。测试的时候，我们要再iTunes connect申请测试账号，有的时候，测试账号出问题，或者，测试账号已经被取消了，不再使用了，而支付的时候，仍然在使用这个测试账号，这个时候，也会出现unknown状态。</p>
+</li>
+<li><p>If you have captured a console log - drop it onto the “Drop Files to upload”.</p>
+</li>
+</ol>
+<p>Save the Feedback number and send it to me - FBxxxxxxxxxx.</p>
+<p>Sincerely Yours,</p>
 </blockquote>
-<p>原文链接：<a href="">https://blog.csdn.net/u013152587/article/details/50488353</a></p>
-<h5 id="苹果官网文档："><a href="#苹果官网文档：" class="headerlink" title="苹果官网文档："></a>苹果官网文档：</h5><blockquote>
-<p>For more information about the underlying cause of the error, see the localizedDescription property of the error object.</p>
-<p> When this error occurs during testing, it can often be resolved by logging out of iTunes and/or the App Store and creating a new test user account in App Store Connect. This approach only works when running the app on a device, not the simulator.</p>
-<p>When this error occurs in production, it may indicate a problem with the user’s iTunes account.</p>
-</blockquote>
-<p>苹果原文：<a href="">https://developer.apple.com/documentation/storekit/skerrorcode/skerrorunknown#discussion</a></p>
+<p>苹果虽然未看代码，但是估计这是个通用问题，指出了问题所在，并且国内大多数的论坛博客，操作方式还是将设置监听器放在ViewController中，所以假如不是按照苹果官网文档接入的话，漏掉这个细节的话，那么只能认命了，绝大多数朋友表示不知道怎么处理这个问题，以至于直接忽略问题。</p>
+<p>所以正确的做法是把设置监听器放置在didFinishLaunching中。如果你有兴趣可以尝试苹果邮件推荐的capture the Console log and begin the app步骤，这是一个更精确的可以复现问题和解决问题的方法。</p>
+<p>以上是所有遇到的支付问题总结，希望可以帮到你，谢谢。</p>
 
     
 
@@ -1406,6 +1659,178 @@ if val &gt; max &#123;
     
     <p class="article-more-link">
       <a class="article-more-a" href="/2020/11/21/Flutter%E9%A1%B9%E7%9B%AE%E4%BC%98%E5%8C%96/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-数据结构基础" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2020/08/13/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%9F%BA%E7%A1%80/" target="_blank">数据结构</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2020/08/13/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%9F%BA%E7%A1%80/" class="archive-article-date">
+        <time datetime="2020-08-13T14:35:37.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2020-08-13</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    <h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><h2 id="1-请区分以下概念："><a href="#1-请区分以下概念：" class="headerlink" title="1.请区分以下概念："></a>1.请区分以下概念：</h2><p> 数据-数据对象-数据元素-数据项<br><img src="/uploads/images/%E7%AE%97%E6%B3%95%E4%B8%8E%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/%E6%95%B0%E6%8D%AE-%E6%95%B0%E6%8D%AE%E5%AF%B9%E8%B1%A1-%E6%95%B0%E6%8D%AE%E5%85%83%E7%B4%A0-%E6%95%B0%E6%8D%AE%E9%A1%B9"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">数据：程序的操作对象，用于描述客观事物</span><br><span class="line">数据的特点：1.可以输入到计算机</span><br><span class="line">			2.可以被计算机处理</span><br><span class="line">数据项：一个数据元素由若干数据项组成</span><br><span class="line">数据元素：组成数据对象的基本单位</span><br><span class="line">数据对象：性质相同的数据元素的集合（类似于数组）</span><br><span class="line">结构：数据元素之间不是独立的，存在特定的关系，这些关系就是结构</span><br><span class="line">数据结构：指的是数据对象中的数据元素之间的关系</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-逻辑结构有以下几种："><a href="#2-逻辑结构有以下几种：" class="headerlink" title="2.逻辑结构有以下几种："></a>2.逻辑结构有以下几种：</h2><ul>
+<li>集合结构</li>
+<li>线性结构</li>
+<li>树形结构</li>
+<li>图形结构</li>
+</ul>
+<h2 id="3-逻辑结构有以下几种："><a href="#3-逻辑结构有以下几种：" class="headerlink" title="3.逻辑结构有以下几种："></a>3.逻辑结构有以下几种：</h2><ul>
+<li>顺序存储结构</li>
+<li>链式存储结构</li>
+</ul>
+<h2 id="4-算法定义："><a href="#4-算法定义：" class="headerlink" title="4.算法定义："></a>4.算法定义：</h2><p>什么是算法？算法就是解决特定问题求解步骤的描述，在计算机中表现为指令的有限序列，并且每个指令表示一个或多个操作。</p>
+<h2 id="5-算法特性："><a href="#5-算法特性：" class="headerlink" title="5.算法特性："></a>5.算法特性：</h2><ul>
+<li>输入输出</li>
+<li>有穷性</li>
+<li>确定性</li>
+<li>可行性</li>
+<li>正确性</li>
+<li>可读性</li>
+<li>健壮性</li>
+<li>时间效率高和储存量低</li>
+</ul>
+<h2 id="6-时间复杂度："><a href="#6-时间复杂度：" class="headerlink" title="6.时间复杂度："></a>6.时间复杂度：</h2><h3 id="时间构成："><a href="#时间构成：" class="headerlink" title="时间构成："></a>时间构成：</h3><ul>
+<li>算法输入时间</li>
+<li>编译可执行代码</li>
+<li>执行指令</li>
+<li>执行重复的指令</li>
+</ul>
+<h2 id="7-大O表示法："><a href="#7-大O表示法：" class="headerlink" title="7.大O表示法："></a>7.大O表示法：</h2><ol>
+<li>用常数1取代运行时间中所有常数</li>
+<li>在修改运行次数函数中，只保留最高阶项</li>
+<li>如果在最高阶存在且不等于1，则去除这个项目相乘的常数</li>
+</ol>
+<h2 id="8-时间复杂度类型："><a href="#8-时间复杂度类型：" class="headerlink" title="8.时间复杂度类型："></a>8.时间复杂度类型：</h2><ol>
+<li>常数阶</li>
+<li>线性阶</li>
+<li>平方阶</li>
+<li>对数阶</li>
+<li>立方阶</li>
+<li>nlog阶</li>
+<li>指数阶（不考虑），O(2^n)或者O(n!)除非是非常小的n，否则会造成噩梦般的时间消耗。这是一种不切实际的时间复杂度，一般不考虑。</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;常数阶时间复杂度计算</span><br><span class="line">void testSum2(int n)&#123;</span><br><span class="line">	int sum&#x3D;0;</span><br><span class="line">	sum &#x3D; (1+n)*n&#x2F;2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;线性阶时间复杂度计算</span><br><span class="line">void add2(int x,int n)&#123;</span><br><span class="line">	for(int i&#x3D;0;i&lt;n;i++)&#123;</span><br><span class="line">		x&#x3D;x+1;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;对数阶</span><br><span class="line">void testA(int n)&#123;</span><br><span class="line">	int count&#x3D;1;</span><br><span class="line">	while(count&lt;n)&#123;</span><br><span class="line">		count&#x3D;count*2;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;平方阶</span><br><span class="line">void add3(int x,int n)&#123;</span><br><span class="line">	for(int i&#x3D;0;i&lt;n;i++)&#123;</span><br><span class="line">		for(int j&#x3D;0;j&lt;n;j++)&#123;</span><br><span class="line">			x&#x3D;x+1;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<h2 id="9-空间复杂度"><a href="#9-空间复杂度" class="headerlink" title="9.空间复杂度"></a>9.空间复杂度</h2><p>算法的空间复杂度通过计算算法所需的存储空间实现，算法空间复杂度的计算公式记做：S(n)=n(f(n)),其中，n为问题的规模，f(n)为语句关于n所占存储空间的函数。</p>
+<h2 id="10-程序空间计算因素"><a href="#10-程序空间计算因素" class="headerlink" title="10.程序空间计算因素"></a>10.程序空间计算因素</h2><ul>
+<li>寄存本身的指令所占空间</li>
+<li>常数所占空间</li>
+<li>变量所占空间</li>
+<li>输入所占空间</li>
+<li>对数据进行操作的辅助空间</li>
+</ul>
+<p><strong>在考量算法的空间复杂度，主要考虑算法执行时所需要的辅助空间</strong></p>
+<h2 id="11-线性表-顺序表"><a href="#11-线性表-顺序表" class="headerlink" title="11.线性表-顺序表"></a>11.线性表-顺序表</h2><p>对于非空的线性表和线性结构，其特点如下：</p>
+<ul>
+<li>存在唯一的一个被称作“第一个”的数据元素；</li>
+<li>存在唯一的一个被称作“最后一个”的数据元素；</li>
+<li>除了第一个之外，结构中的每个数据元素有一个前驱；</li>
+<li>除了最后一个之外，结构中的每个元素都有一个后继；</li>
+</ul>
+
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">iOS</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">算法</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/算法与数据结构//" class="article-tag-list-link color3">算法与数据结构</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/算法与数据结构/数据结构基础知识//" class="article-tag-list-link color4">数据结构基础知识</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2020/08/13/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%9F%BA%E7%A1%80/">展开全文 >></a>
     </p>
     
 
@@ -2629,300 +3054,6 @@ array.release;
 
 
   
-    <article id="post-ReactiveCocoa and MVVM, 一次不错的实践" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2019/02/21/ReactiveCocoa%20and%20MVVM,%20%E4%B8%80%E6%AC%A1%E4%B8%8D%E9%94%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" target="_blank">A good application for ReactiveCocoa and MVVM</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2019/02/21/ReactiveCocoa%20and%20MVVM,%20%E4%B8%80%E6%AC%A1%E4%B8%8D%E9%94%99%E7%9A%84%E5%AE%9E%E8%B7%B5/" class="archive-article-date">
-        <time datetime="2019-02-21T01:52:04.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-02-21</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    <p>Description：</p>
-<ul>
-<li>标题是英文的，只是在为托福做准备，所以希望在任何可以的地方练习一下英文的说和写。</li>
-<li>本篇不再介绍基础的MVVM和RAC知识，所以在看本篇文章时，请确定你已经读了上一篇关于RAC+MVVM的文章，或者你已经对MVVM和RAC已经有很多的了解，你也可以直接阅读。</li>
-<li>请带着批判的眼光来审视这篇文章，因为没有什么是完美的，假如可以催生出你更多的想法，那我花时间来写这篇文章也是很有价值的，</li>
-</ul>
-<h2 id="使用MVVM和RAC会解决你什么问题？"><a href="#使用MVVM和RAC会解决你什么问题？" class="headerlink" title="使用MVVM和RAC会解决你什么问题？"></a>使用MVVM和RAC会解决你什么问题？</h2><p>这个要从结果来看：</p>
-<h3 id="代码更加“紧密”："><a href="#代码更加“紧密”：" class="headerlink" title="代码更加“紧密”："></a>代码更加“紧密”：</h3><p>我的意思是说，你可以利用类似<strong>rac_signalForControlEvents：</strong>这样的方法将按钮或者其他控件的响应事件就写在<strong>subscribeNext</strong>：的block中，像下面这样：</p>
-<pre><code>-(LeftImageButton *)subjectHomework_button&#123;
-if (!_subjectHomework_button) &#123;
-    _subjectHomework_button=[[LeftImageButton alloc] init];
-    _subjectHomework_button.left_imageView.image=[UIImage imageNamed:@&quot;项目制学习作业&quot;];
-    _subjectHomework_button.right_label.text=@&quot;项目制学习作业布置&quot;;
-    _subjectHomework_button.backgroundColor=fifty_nine_BACKGROUND_COLOR;
-    [[_subjectHomework_button rac_signalForControlEvents:UIControlEventTouchUpInside] subscribeNext:^(__kindof UIControl * _Nullable x) &#123;
-        SNSubjectHomeworkViewController *subjectHomework_VC=[[SNSubjectHomeworkViewController alloc] init];
-        [self.navigationController pushViewController:subjectHomework_VC animated:true];
-    &#125;];
-&#125;
-return _subjectHomework_button;
-&#125;
-</code></pre>
-<p>按钮的点击事件写在了懒加载的部分，这样的代码在维护起来很便利，否则用addTarget: action:forControlEvents:实现点击事件的代码中，其他方法的点击事件也有很多，很杂，m文件会充斥着大量的代码，你不断的command+c和command+f，你会被一个.m文件就搞得晕头转向。<br>还有像下面这样将通知的实现也写在监听通知信号的订阅block中：</p>
-<pre><code>[[[NSNotificationCenter defaultCenter] rac_addObserverForName:GOT_INFORMATION_NOTI object:nil] subscribeNext:^(NSNotification * _Nullable x) &#123;
-    [self setHeadImage];
-&#125;];
-</code></pre>
-<h3 id="VC真的瘦下来了："><a href="#VC真的瘦下来了：" class="headerlink" title="VC真的瘦下来了："></a>VC真的瘦下来了：</h3><p>对于一个处女座来说，在用了MVVM和RAC后我已经落下了几滴感动的眼泪。曾经一个燥热的午后，我在仿写QQ音乐App，为了设计那么美妙操作体验，我的VC不知不觉就1000+行，后来想要再更改操作逻辑时，简直是噩梦，除了上面所说的方法太多，跳来跳去，脑子就晕了。还有代码的分布没有一个规矩和风格，这在代码量少的时候无关紧要，但是在代码量多的时候，就会导致维护或更改时太痛苦了。</p>
-<p>所以那个午后我终于明白了使VC瘦下来的必要性，同时也必须要形成一套编程风格。后来我的代码是这样组织的：</p>
-<pre><code>#pragma mark - 初始化UI
-
-#pragma mark - 懒加载
-
-#pragma mark - 代理
-
-#pragma mark - target action
-
-#pragma mark - Maonry
-
-#pragma mark - other 只有本页面会使用的工具方法
-</code></pre>
-<p>这是一个基本的组织方法，把对应的代码都组织在特定的方法组中，这样不仅便于自己开发，还对后来维护你项目的人也很友好。还有更好的一点，有时候出现了crash，在控制台的提示信息中你就可以知道哪一个部分出了问题，找到对应的方法组修改即可。</p>
-<p>回到正题，VC真的瘦下来了，Model、ViewModel、View各司其职，HomeVC一般是最容易堆积代码的地方，但是在MVVM下，我的每一个VC基本都控制在500行以下，她真正的瘦下来了。如果减肥有这么简单就好了。</p>
-<p>好的，下面会以邮箱功能做一个简单的阐述，这只是一个站内信的邮箱功能，没有很多代码。</p>
-<p>在MVVM下，我是这样设计View层的，在SNTeacherMailViewController中有一个tableView用来显示邮箱列表：</p>
-<pre><code>@property(nonatomic,strong)UITableView *tableView;
-</code></pre>
-<p>懒加载：</p>
-<pre><code>-(UITableView *)tableView&#123;
-if (!_tableView) &#123;
-    _tableView=[[UITableView alloc] init];
-    _tableView.delegate=self;
-    _tableView.dataSource=self;
-    _tableView.layer.cornerRadius=20.0;
-    _tableView.backgroundColor=[UIColor whiteColor];
-    _tableView.separatorInset=UIEdgeInsetsMake(0,SNTrueHeight(40), 0, SNTrueHeight(40));//top left bottom right 左右边距相同
-    _tableView.separatorStyle=UITableViewCellSeparatorStyleSingleLine;
-    
-    [_tableView registerClass:[MailTableViewCell class] forCellReuseIdentifier:teacher_mail_cell_reuse];
-&#125;
-return _tableView;
-&#125;
-</code></pre>
-<p>下面要实现tableView的数据源和代理方法，ok，但是数据从哪里拿？VC在MVVM下已经被划分到View层，所以在SNTeacherMailViewController中不会再写发送网络请求的代码，而ViewModel是呈现给View数据的一个好帮手，网络请求将会在ViewModel中实现，并通过把ViewModel当作VC的一个属性来让VC获得数据。所以在实现tabeView的数据源和代理方法前，先来看看ViewModel，这是TeacherMailViewModel的头文件，</p>
-<pre><code>#import &lt;Foundation/Foundation.h&gt;
-
-NS_ASSUME_NONNULL_BEGIN
-
-@interface TeacherMailViewModel : NSObject
-
-@property(nonatomic,strong,readonly)RACCommand *command;
-@property(nonatomic,strong,readonly)NSArray *mailArray;
-/**
- 获得邮箱数据
- */
--(void)getMailInformations;
-
-@end
-</code></pre>
-<p>他需要给SNTeacherMailViewController提供数据，所以他通过暴露mailArray属性来给SNTeacherMailViewController的tableView提供数据，其他部分你应当好好看一看，我还又一个方法：</p>
-<pre><code>-(void)getMailInformations;
-</code></pre>
-<p>这个方法不会直接在VC中调用获得数据的，注意到</p>
-<pre><code>@property(nonatomic,strong,readonly)RACCommand *command;
-</code></pre>
-<p>了吗，这个就是发送网络请求的东西，所以getMailInformations：方法的实现将会是这样子：</p>
-<pre><code>-(void)getMailInformations&#123;
-@weakify(self);
-self.command = [[RACCommand alloc] initWithSignalBlock:^RACSignal *(id input) &#123;
-    @strongify(self);
-    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) &#123;
-        @strongify(self);
-        
-        NSMutableDictionary *header=[NSMutableDictionary dictionaryWithObject:[[UserInfoHandler sharedUserInfoHandler] userToken] forKey:@&quot;token&quot;];
-        NSMutableDictionary *body=[NSMutableDictionary dictionaryWithObject:@&quot;nothing&quot; forKey:@&quot;nothing&quot;];
-        
-        [[SNAFNetManager sharedManager] requestWithURLString:API_URL_messageTraining header:header parameters:body subModel:[TeacherMailModel class] success:^(BasicResponseModel * _Nonnull successData) &#123;
-            self.mailArray=successData.data;
-            //发送订阅信号
-            [subscriber sendNext:@&quot;&quot;];
-            //发送结束信号
-            [subscriber sendCompleted];
-        &#125; failure:^(BasicResponseModel * _Nonnull failureData) &#123;
-            
-        &#125; progressPercentBlock:^(float percent) &#123;
-            
-        &#125;];
-        
-        return nil;
-    &#125;];
-&#125;];
-&#125;
-</code></pre>
-<p>在方法中，当需要发送请求时就通过封装好的网络类方法发送了一个请求，并且在success回调block中，把网络数据赋值到了self.mailArray中。</p>
-<p>前面说过getMailInformations：这个方法不会直接在VC中调用获得数据的，那怎么触发这个网络请求呢？好，现在看VC</p>
-<pre><code>@property(nonatomic,strong)TeacherMailViewModel *viewModel;    
-</code></pre>
-<p>就像前面说好的，需要一个viewModel属性。还需要初始化：</p>
-<pre><code>-(TeacherMailViewModel *)viewModel&#123;
-if (!_viewModel) &#123;
-    _viewModel=[[TeacherMailViewModel alloc] init];
-    
-    [_viewModel getMailInformations];
-&#125;
-return _viewModel;
-&#125;
-</code></pre>
-<p>诶诶诶？怎么getMailInformations：方法直接在viewModel的初始化方法里面调用了？其实他只是相当一个“注册”，真正想要执行command的内部信号的时候需要主动调用下:</p>
-<pre><code>[command execute:nil]
-</code></pre>
-<p>好的，所以一切都做好后，那么需要执行command了，</p>
-<pre><code>- (void)subscribeNextViewModel &#123;
-@weakify(self);
-//将命令执行后的数据交给controller
-[self.viewModel.command.executionSignals.switchToLatest subscribeNext:^(id _Nullable x) &#123;
-    @strongify(self);
-    [self.tableView reloadData];
-&#125;];
-
-//执行command
-[self.viewModel.command execute:nil];
-&#125;
-</code></pre>
-<p>而且这里订阅了self.viewModel.command的信号，当网络请求里：</p>
-<pre><code>[subscriber sendCompleted];
-</code></pre>
-<p>之后，这里将会订阅到信号，并且刷新一下表格数据：</p>
-<pre><code>[self.viewModel.command.executionSignals.switchToLatest subscribeNext:^(id _Nullable x) &#123;
-    @strongify(self);
-    [self.tableView reloadData];
-&#125;];
-</code></pre>
-<p>好的，实现tableView的数据源和代理方法吧，它会是这样子的：</p>
-<pre><code>- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section&#123;
-return self.viewModel.mailArray.count;
-&#125;
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath&#123;
-MailTableViewCell *cell=[tableView dequeueReusableCellWithIdentifier:teacher_mail_cell_reuse];
-if (cell==nil) &#123;
-    cell=[[MailTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:teacher_mail_cell_reuse];
-&#125;
-
-cell.viewModel_teacher=self.viewModel.mailArray[indexPath.row];
-
-return cell;
-&#125;    
-</code></pre>
-<p>这里的自定义cell也有一个viewModel属性，实际上，他已经不算作一个viewModel了，只是一个单纯的Model，</p>
-<pre><code>#import &lt;UIKit/UIKit.h&gt;
-#import &quot;SNMailModel.h&quot;
-#import &quot;TeacherMailModel.h&quot;
-NS_ASSUME_NONNULL_BEGIN
-
-@interface MailTableViewCell : UITableViewCell
-@property(nonatomic,strong)TeacherMailModel *viewModel_teacher;
-@end
-</code></pre>
-<p>没错吧。然后在自定义cell的实现文件中，绑定数据：</p>
-<pre><code>//老师端数据绑定
-[RACObserve(self, viewModel_teacher.content) subscribeNext:^(NSString *  _Nullable x) &#123;
-    self.detail_label.text=x;
-&#125;];
-[RACObserve(self, viewModel_teacher.updateDate) subscribeNext:^(NSString *  _Nullable x) &#123;
-    self.date_label.text=x;
-&#125;];
-</code></pre>
-<p>最后，在SNTeacherMailViewController中就可多次的调用subscribeNextViewModel：方法了，不管是viewDidLoad或者viewWillAppear，或者你用了上拉刷新，下拉你都可以调用subscribeNextViewModel：方法，你只需要告诉他你需要数据了，然后他就会请求网络的到数据，然后他知道怎么填充数据，实际上有了RAC，数据改变都是通过类似管道一样的东西散发出去的，只要viewModel中提供数据的mailArray数组发生了改变，那么其他所有订阅了该信号的地方，也都会更改数据，函数响应式编程是个好东西。</p>
-<p>你也许产生怀疑了🤨，对于这个场景，我在VC中写好一个网络请求方法，需要的时候调用不就ok了吗，为什么搞这么多东西。是的，MVVM在逻辑很少的情形下，的确感觉有点更麻烦了呢，不过你相信我，当你的VC有超过5个或者10个网络请求后，VC的代码也就开始爆增，而状态又很多的情况下，那么bug会更多，也会更加难维护，后面的维护人员，拿到你的代码2000行，3000，他不会钦佩你多么牛，他只会埋冤你写的代码真正的massive，因为他很难看懂你的代码，同时也很难改，生怕改错什么地方，这是开发了一段时间的人都会体验到的。</p>
-<p>ok，你已经又大致的感觉了，但是其中的数据流向你可能还没有搞懂，理解不了数据流向，你可能只会照葫芦画瓢，但是不理解应该怎样用到自己的业务场景中。同时希望下面的图帮到你。</p>
-<p><img src="/uploads/images/MVVM_IMAGE.png"></p>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">iOS</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">RAC+MVVM</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/iOS//" class="article-tag-list-link color4">iOS</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/iOS/RAC-MVVM//" class="article-tag-list-link color4">RAC+MVVM</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2019/02/21/ReactiveCocoa%20and%20MVVM,%20%E4%B8%80%E6%AC%A1%E4%B8%8D%E9%94%99%E7%9A%84%E5%AE%9E%E8%B7%B5/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
@@ -3099,19 +3230,23 @@ NS_ASSUME_NONNULL_BEGIN
               </li>
              
               <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
+              </li>
+             
+              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">内购</a>
               </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">错误</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color1">计算机基础</a>
               </li>
             
             <div class="clearfix"></div>
