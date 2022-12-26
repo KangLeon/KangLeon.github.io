@@ -193,6 +193,133 @@
             
 
   
+    <article id="post-怎样给Mac加速" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+  
+  
+    <h1 itemprop="name">
+	
+	  <a class="article-title" href="/2022/12/26/%E6%80%8E%E6%A0%B7%E7%BB%99Mac%E5%8A%A0%E9%80%9F/" target="_blank">怎样给Mac加速</a>
+  
+    </h1>
+  
+
+
+  
+  
+<a href="/2022/12/26/%E6%80%8E%E6%A0%B7%E7%BB%99Mac%E5%8A%A0%E9%80%9F/" class="archive-article-date">
+        <time datetime="2022-12-26T06:40:31.170Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2022-12-26</time>
+</a>
+
+  
+  
+    
+
+  
+  </header>
+  
+  <div class="article-entry" itemprop="articleBody">
+    
+    <h1 id="怎样给Mac加速"><a href="#怎样给Mac加速" class="headerlink" title="怎样给Mac加速"></a>怎样给Mac加速</h1><h2 id="进程优化"><a href="#进程优化" class="headerlink" title="进程优化"></a>进程优化</h2><h3 id="一、Windows-Server进程优化"><a href="#一、Windows-Server进程优化" class="headerlink" title="一、Windows Server进程优化"></a>一、Windows Server进程优化</h3><p><img src="/uploads/images/%E6%80%8E%E6%A0%B7%E7%BB%99mac%E5%8A%A0%E9%80%9F/windows_server.png"></p>
+<p>这是一个负责窗口调度显示的进程，是系统进程，因为更多的动画和阴影处理会增加windows_server进程的处理工作，所以导致电脑在卡顿的时候学上加霜，解决办法就是，让各种效果返璞归真，减少特效。</p>
+<p>问题处理</p>
+<p>勾选动态效果，勾选降低透明度</p>
+<p><img src="/uploads/images/%E6%80%8E%E6%A0%B7%E7%BB%99mac%E5%8A%A0%E9%80%9F/%E5%85%B3%E9%97%AD%E6%98%BE%E7%A4%BA%E6%95%88%E6%9E%9C.png"></p>
+<h3 id="二、mds、mds-stores、mdworker-进程优化"><a href="#二、mds、mds-stores、mdworker-进程优化" class="headerlink" title="二、mds、mds_stores、mdworker 进程优化"></a>二、mds、mds_stores、mdworker 进程优化</h3><p>这些进程都是系统进程，是Spotlight功能创建的进程</p>
+<p><img src="/uploads/images/%E6%80%8E%E6%A0%B7%E7%BB%99mac%E5%8A%A0%E9%80%9F/%E7%B3%BB%E7%BB%9F%E8%BF%9B%E7%A8%8B.png"></p>
+<p>Spotlight 中文名称为 聚焦，就是按下 Command + 空格 弹窗的那个</p>
+<p><img src="/uploads/images/%E6%80%8E%E6%A0%B7%E7%BB%99mac%E5%8A%A0%E9%80%9F/Soptlight.png"></p>
+<p><code>mds、mds_stores、mdworker</code> 是 Spotlight 的组成部分：</p>
+<ul>
+<li>mds<ul>
+<li>元数据服务器。</li>
+</ul>
+</li>
+<li>mdworker<ul>
+<li>元数据服务器 worker 进程，主要负责文件的索引。</li>
+</ul>
+</li>
+<li>mds_stores<ul>
+<li>元数据存储服务。</li>
+</ul>
+</li>
+</ul>
+<h4 id="问题处理"><a href="#问题处理" class="headerlink" title="问题处理"></a>问题处理</h4><p>因为我很少使用这些功能，所以我选择了禁止 聚焦 索引文件。</p>
+<p>  <code>sudo mdutil -a -i off</code></p>
+<p>如果需要再次使用，可以通过以下命令重新开启。</p>
+<p>  <code>sudo mdutil -a -i on</code></p>
+<h3 id="三、node进程优化"><a href="#三、node进程优化" class="headerlink" title="三、node进程优化"></a>三、node进程优化</h3><p>当我们运行项目的时候，假如长时间运行工程，node进程，非系统进程占用的内存会越来越大，曾经见到这个进程占用内存会到达5G左右</p>
+<p><img src="/uploads/images/%E6%80%8E%E6%A0%B7%E7%BB%99mac%E5%8A%A0%E9%80%9F/node%E8%BF%9B%E7%A8%8B.png"></p>
+<h4 id="问题处理-1"><a href="#问题处理-1" class="headerlink" title="问题处理"></a>问题处理</h4><p>那么我们其实可以主动Ctrl+C关掉不在运行的工程，以清理被占用内存</p>
+<h2 id="物理降温"><a href="#物理降温" class="headerlink" title="物理降温"></a>物理降温</h2><h3 id="一、增加降温设备"><a href="#一、增加降温设备" class="headerlink" title="一、增加降温设备"></a>一、增加降温设备</h3>
+    
+
+    
+
+    
+
+  </div>
+  <div class="article-info article-info-index">
+    
+    
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">开发经验</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+    
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/经验分享//" class="article-tag-list-link color5">经验分享</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+    
+    <p class="article-more-link">
+      <a class="article-more-a" href="/2022/12/26/%E6%80%8E%E6%A0%B7%E7%BB%99Mac%E5%8A%A0%E9%80%9F/">展开全文 >></a>
+    </p>
+    
+
+    
+    <div class="clearfix"></div>
+  </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-来上海3年总结" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -210,7 +337,7 @@
   
   
 <a href="/2021/08/25/%E6%9D%A5%E4%B8%8A%E6%B5%B73%E5%B9%B4%E6%80%BB%E7%BB%93/" class="archive-article-date">
-        <time datetime="2021-08-25T06:40:26.292Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-08-25</time>
+        <time datetime="2021-08-25T06:40:26.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-08-25</time>
 </a>
 
   
@@ -2054,135 +2181,6 @@ productList = response.products
 
 
   
-    <article id="post-Flutter项目优化" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-  
-  
-    <h1 itemprop="name">
-	
-	  <a class="article-title" href="/2020/11/21/Flutter%E9%A1%B9%E7%9B%AE%E4%BC%98%E5%8C%96/" target="_blank">Flutter项目优化--渲染优化</a>
-  
-    </h1>
-  
-
-
-  
-  
-<a href="/2020/11/21/Flutter%E9%A1%B9%E7%9B%AE%E4%BC%98%E5%8C%96/" class="archive-article-date">
-        <time datetime="2020-11-21T08:54:04.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2020-11-21</time>
-</a>
-
-  
-  
-    
-
-  
-  </header>
-  
-  <div class="article-entry" itemprop="articleBody">
-    
-    <h3 id="1-减少build-的耗时："><a href="#1-减少build-的耗时：" class="headerlink" title="1. 减少build()的耗时："></a>1. 减少build()的耗时：</h3><ul>
-<li>避免在build()方法中执行重复且耗时的工作，因为当父widget重建时，子widget的build()方法会被重复调用.</li>
-<li> 避免在build()方法中返回一个超大widget，将widget拆分成多个小widget，各自控制UI的渲染，避免重复渲染一个大的widget。</li>
-</ul>
-<h3 id="2-使用mobx来进行数据监听，而不是频繁多次进行setState。"><a href="#2-使用mobx来进行数据监听，而不是频繁多次进行setState。" class="headerlink" title="2.使用mobx来进行数据监听，而不是频繁多次进行setState。"></a>2.使用mobx来进行数据监听，而不是频繁多次进行setState。</h3><h3 id="3-避免离屏渲染：（与iOS概念一样）"><a href="#3-避免离屏渲染：（与iOS概念一样）" class="headerlink" title="3.避免离屏渲染：（与iOS概念一样）"></a>3.避免离屏渲染：（与iOS概念一样）</h3><p>避免使用一些会触发saveLayer()的widget：</p>
-<ul>
-<li>尽量不使用Opacitywidget</li>
-<li>使用Clipping时避免使用Clip.antiAliasWithSaveLayer</li>
-<li>ShaderMask</li>
-<li>ColorFilter</li>
-<li>使用Chip且disabledColorAlpha != oxff 时</li>
-<li>使用Text且存在overfloShader时<br>避免调用 saveLayer() 的方式：</li>
-<li>要在图像中实现淡入淡出，请考虑使用 FadeInImage widget，该 widget 使用 GPU 的片段着色器应用渐变不透明度。</li>
-<li>要创建带圆角的矩形，而不是应用剪切矩形，考虑使用很多 widget 都提供的 borderRadius属性。</li>
-</ul>
-<h3 id="4-布局方面padding效率大于margin："><a href="#4-布局方面padding效率大于margin：" class="headerlink" title="4.布局方面padding效率大于margin："></a>4.布局方面padding效率大于margin：</h3><h3 id="5-RepaintBoundary："><a href="#5-RepaintBoundary：" class="headerlink" title="5.RepaintBoundary："></a>5.RepaintBoundary：</h3><p>如果你的自定义View比较复杂，应该尽可能的避免重绘。使用RepaintBoundary者RenderObject.isRepaintBoundary为true可能会有对你有所帮助。</p>
-<h3 id="6"><a href="#6" class="headerlink" title="6."></a>6.</h3><ul>
-<li>尽量将setState放在叶子节点，好处是build时影响范围极小，简称局部刷新<br><img src="/uploads/images/flutter/flutter_set_state.png"></li>
-<li>能不用 Opacity Widget，就尽量不要用，因为这货会粗发GPU一个saveLayer的指令，做Skia的大神说，这个指令相当耗时。</li>
-<li>使用ListView.builder()而不是直接使用ListView()来构建列表。</li>
-<li>对于频繁更新的控件（比如倒计时，秒表），使用RepaintBoundary隔离它，让他在一个独立的paint区域。</li>
-<li>使用const来修饰永远不需要变更的控件。</li>
-<li>优先使用StateLessWidget，而不是全部用StateFulWidget</li>
-<li>使用Visibility控件替换if/else，有些小伙伴喜欢else时return一个 占位控件，须不知，这种效率是没有Visibility高效的。</li>
-</ul>
-
-    
-
-    
-
-    
-
-  </div>
-  <div class="article-info article-info-index">
-    
-    
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">flutter</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">性能</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-    
-	<div class="article-category tagcloud">
-		<i class="icon-book icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/Flutter//" class="article-tag-list-link color3">Flutter</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="/categories/Flutter/性能优化//" class="article-tag-list-link color5">性能优化</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-
-    
-    <p class="article-more-link">
-      <a class="article-more-a" href="/2020/11/21/Flutter%E9%A1%B9%E7%9B%AE%E4%BC%98%E5%8C%96/">展开全文 >></a>
-    </p>
-    
-
-    
-    <div class="clearfix"></div>
-  </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
@@ -2197,7 +2195,7 @@ productList = response.products
   <div class="outer">
     <div id="footer-info">
     	<div class="footer-left">
-    		&copy; 2017-2021 <a href="http://www.jiyoung.cn/" target="_blank">KangLeon</a>
+    		&copy; 2017-2022 <a href="http://www.jiyoung.cn/" target="_blank">KangLeon</a>
     	</div>
       	<div class="footer-right">
 			
@@ -2355,15 +2353,11 @@ productList = response.products
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
-              </li>
-             
-              <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">简历</a>
               </li>
              
               <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+                <a href="javascript:void(0)" class="js-tag color5">知识结构</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2372,6 +2366,18 @@ productList = response.products
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color3">错误</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color5">开发经验</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">动画</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
@@ -2384,10 +2390,6 @@ productList = response.products
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color5">自我管理</a>
-              </li>
-             
-              <li class="article-tag-list-item">
-                <a href="javascript:void(0)" class="js-tag color3">算法</a>
               </li>
              
               <li class="article-tag-list-item">
